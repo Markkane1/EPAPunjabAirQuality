@@ -1,0 +1,7 @@
+timestamp,station_id,station_name,district,latitude,longitude,pollutant,value,wind_speed,wind_direction
+2026-11-10T12:00:00Z,PK_OOB_001,Out Latitude,Lahore,45.5000,74.3587,pm25,120.0,2.0,90.0
+2026-11-10T12:00:00Z,PK_OOB_002,Out Longitude,Lahore,31.5204,85.2000,pm25,120.0,2.0,90.0
+2026-11-10T12:00:00Z,PK_OOB_003,Over Limit Value,Lahore,31.5204,74.3587,pm25,6500.0,2.0,90.0
+2026-11-10T12:00:00Z,PK_OOB_004,Negative Wind Speed,Lahore,31.5204,74.3587,pm25,120.0,-5.0,90.0
+2026-11-10T12:00:00Z,PK_OOB_005,Over Limit Wind Speed,Lahore,31.5204,74.3587,pm25,120.0,45.0,90.0
+2026-11-10T12:00:00Z,PK_OOB_006,Invalid Pollutant,Lahore,31.5204,74.3587,toxic_dust,120.0,2.0,90.0

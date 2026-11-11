@@ -1,0 +1,345 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="dark">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+  <title>Punjab Air Quality Operational Console</title>
+  
+  <!-- Mission-Critical Scientific Instrument Fonts -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@500;600;700&family=Source+Sans+3:wght@400;600;700&family=JetBrains+Mono:wght@400;600;700&display=swap">
+  
+  <!-- Atmospheric Design Tokens & Styles -->
+  <link rel="stylesheet" href="/static/css/tokens.css">
+</head>
+<body>
+  <div class="app-container">
+
+    <!-- ====================================================================
+         ZONE 1: COMMAND HEADER & NAVIGATION STRIP
+         ==================================================================== -->
+    <header class="zone-1-header" role="banner" aria-label="Command Header">
+      <div class="brand-section">
+        <div id="liveSyncBadge" class="live-pulse-badge" role="status" aria-live="polite">
+          <span class="pulse-dot"></span>
+          <span id="liveSyncText">LIVE SYNC: ACTIVE</span>
+        </div>
+        <div class="console-title-group">
+          <h1>Punjab Air Quality Console</h1>
+          <div class="sub-org">EPA Punjab · Environmental Monitoring Center · Regional Airshed Telemetry</div>
+        </div>
+      </div>
+
+      <div class="header-status-group">
+        <div id="provincialAqiBadge" class="provincial-aqi-badge" aria-label="Provincial Air Quality Index">
+          AQI 342 · VERY UNHEALTHY
+        </div>
+        <div id="clockReadout" class="clock-readout tabular-nums" aria-label="Current Simulation Time">
+          PKT (UTC+5): Sat 09 Nov 23:00
+        </div>
+      </div>
+
+      <nav class="nav-tabs-group" role="tablist" aria-label="Console Navigation Sub-Views">
+        <button type="button" class="nav-tab-btn" role="tab" aria-selected="true" data-view="console">Main Console</button>
+        <button type="button" class="nav-tab-btn" role="tab" aria-selected="false" data-view="lahore">Lahore Focus</button>
+        <button type="button" class="nav-tab-btn" role="tab" aria-selected="false" data-view="heatmap">Hourly Heatmap</button>
+        <button type="button" class="nav-tab-btn" role="tab" aria-selected="false" data-view="transboundary">Transboundary</button>
+        <button type="button" class="nav-tab-btn" role="tab" aria-selected="false" data-view="grid">3x3 Grid</button>
+      </nav>
+
+      <div class="header-actions">
+        <button type="button" id="themeToggleBtn" aria-label="Toggle Dark and Light Theme" title="Toggle Atmospheric Theme">
+          Theme ◐
+        </button>
+        <button type="button" id="csvUploadBtn" class="primary" aria-label="Upload User CSV Dataset">
+          Upload CSV
+        </button>
+      </div>
+    </header>
+
+    <!-- ====================================================================
+         ZONE 2: PRIMARY POLLUTANT SWITCHER (9 Statutory Species)
+         ==================================================================== -->
+    <nav class="zone-2-pollutants" role="radiogroup" aria-label="Primary Pollutant Species Switcher">
+      <span class="pollutant-label-tag">Pollutant Species:</span>
+      <div id="pollutantStrip" class="pollutant-strip">
+        <!-- Injected dynamically by UIController with regulatory limits -->
+      </div>
+    </nav>
+
+    <!-- ====================================================================
+         CONSOLE BODY: ZONE 3 (VIEWPORT) & ZONE 4 (SIDEBAR)
+         ==================================================================== -->
+    <main id="panel-console" class="console-body deep-dive-panel" role="main">
+
+      <!-- Zone 3: Geographic Map Viewport Console -->
+      <section class="zone-3-viewport" aria-label="Geographic Map Viewport Console">
+        <div class="viewport-canvas-container">
+          <canvas id="mainMapCanvas" class="map-canvas" aria-label="Punjab Regional Air Quality Multi-Layer Map"></canvas>
+
+          <!-- Floating HUD Clock & Pollutant Indicator (Top-Left) -->
+          <div class="hud-clock-deck" aria-hidden="true">
+            <div id="hudDate" class="hud-date">Sat 09 Nov</div>
+            <div id="hudTime" class="hud-time tabular-nums">23:00</div>
+            <div id="hudPollutant" class="hud-pollutant-pill">AQI · PEPC Scale</div>
+          </div>
+
+          <!-- Floating Dynamic PEPC Legend (Bottom-Right) -->
+          <div class="hud-legend-deck" aria-label="Air Quality Index Legend">
+            <div class="legend-header">
+              <span id="legendTitle">AQI · EPA Punjab Categories</span>
+            </div>
+            <div id="legendColorBar" class="legend-color-bar"></div>
+            <div id="legendTicks" class="legend-ticks tabular-nums"></div>
+            <div class="legend-footer">
+              <div>● Fixed Station · ✈ Airport METAR Wind</div>
+              <div>
+                <span class="legend-swatch" style="background: var(--flow-inflow);"></span>Inflow from India
+                <span class="legend-swatch" style="background: var(--flow-outflow); margin-left: 6px;"></span>Outflow to India
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- 216-Hour Transport Scrubber Deck -->
+        <div class="scrubber-deck" role="toolbar" aria-label="Temporal Transport Scrubber Controls">
+          <div class="scrubber-playback-group">
+            <button type="button" id="playBtn" class="primary" aria-label="Play or Pause Timeline">Pause</button>
+            <input type="range" id="scrubRange" class="range-scrubber-input" min="0" max="215" step="0.01" value="0" aria-label="Timeline Transport Scrubber (Hours 0 to 215)">
+          </div>
+
+          <div class="scrubber-options-group">
+            <label for="speedSelect">Speed:
+              <select id="speedSelect">
+                <option value="0.35">0.35x Slow</option>
+                <option value="0.8" selected>0.8x Normal</option>
+                <option value="1.6">1.6x Fast</option>
+              </select>
+            </label>
+
+            <span role="radiogroup" aria-label="Surface Display Mode" style="display: inline-flex; gap: 8px;">
+              <label><input type="radio" name="mapMode" value="surface" checked> Continuous Surface</label>
+              <label><input type="radio" name="mapMode" value="district"> District Choropleth</label>
+            </span>
+
+            <label><input type="checkbox" id="toggleTransportLinks" checked> Transport Flux Curves</label>
+            <label><input type="checkbox" id="toggleRegionalWinds" checked> Regional Winds (ECMWF)</label>
+          </div>
+        </div>
+      </section>
+
+      <!-- Zone 4: Real-Time Telemetry Sidebar (360px Fixed Desktop) -->
+      <aside class="zone-4-sidebar" aria-label="Real-Time Telemetry Sidebar">
+
+        <!-- Provincial Summary Card -->
+        <section class="instrument-card" aria-label="Provincial Airshed Summary">
+          <h2>Provincial Summary</h2>
+          <div class="card-hint">Real-time provincial aggregates & 216-hour trend</div>
+          <div class="kpi-metrics-grid">
+            <div class="kpi-cell">
+              <div id="kpiMeanVal" class="val num">284.5</div>
+              <div class="lbl">Mean Index</div>
+            </div>
+            <div class="kpi-cell">
+              <div id="kpiExceedVal" class="val num">38 / 41</div>
+              <div class="lbl">&gt; PEQS Limit</div>
+            </div>
+            <div class="kpi-cell">
+              <div id="kpiPeakVal" class="val num" style="font-size: 14px;">Lahore: 492</div>
+              <div class="lbl">Peak District</div>
+            </div>
+          </div>
+          <canvas id="sparklineCanvas" class="sparkline-canvas" aria-label="216-Hour Provincial Mean Sparkline"></canvas>
+        </section>
+
+        <!-- Airport Weather Matrix Card -->
+        <section class="instrument-card" aria-label="Airport Weather Matrix">
+          <h2>Airport Weather Matrix</h2>
+          <div class="card-hint">Aviation METAR vector winds, visibility, and temperature</div>
+          <table class="compact-table">
+            <thead>
+              <tr>
+                <th>Aerodrome</th>
+                <th class="r">Wind</th>
+                <th class="r">Vis</th>
+                <th class="r">Temp</th>
+                <th>Weather</th>
+              </tr>
+            </thead>
+            <tbody id="airportTableBody">
+              <!-- Dynamically populated -->
+            </tbody>
+          </table>
+        </section>
+
+        <!-- Ranked District Exceedance List -->
+        <section class="instrument-card" aria-label="Ranked District Exceedance List">
+          <h2>District Concentrations</h2>
+          <div class="card-hint">All 41 districts sorted descending (Click to inspect)</div>
+          <div id="districtRankedList" class="district-ranked-list">
+            <!-- Dynamically populated -->
+          </div>
+        </section>
+
+        <!-- Selected District Telemetry Drawer -->
+        <section class="instrument-card" aria-label="Selected District Telemetry">
+          <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 4px;">
+            <h2 id="selectedDistrictTitle">Lahore</h2>
+            <select id="districtSelectDropdown" aria-label="Choose District">
+              <!-- Dynamically populated -->
+            </select>
+          </div>
+          <div class="card-hint">9-Pollutant breakdown vs statutory PEQS standards</div>
+          <table class="compact-table">
+            <thead>
+              <tr>
+                <th>Pollutant</th>
+                <th class="r">Reading</th>
+                <th class="r">Period Mean</th>
+                <th class="r">PEQS (Ratio)</th>
+              </tr>
+            </thead>
+            <tbody id="selectedDistrictTableBody">
+              <!-- Dynamically populated -->
+            </tbody>
+          </table>
+        </section>
+
+        <!-- 16-Sector CPF Polar Wind Rose Card -->
+        <section class="instrument-card" aria-label="Conditional Probability Function Polar Rose">
+          <h2>CPF Wind Rose</h2>
+          <div id="roseMetaText" class="card-hint">Conditional Probability Function (&gt;P75). Dashed ring = 0.25 null baseline.</div>
+          <canvas id="roseCanvas" class="rose-canvas" aria-label="16-Sector CPF Polar Wind Rose Canvas"></canvas>
+        </section>
+
+      </aside>
+    </main>
+
+    <!-- ====================================================================
+         ZONE 5: DEEP-DIVE PANELS
+         ==================================================================== -->
+
+    <!-- Panel 1: Synchronized 3x3 Multi-Pollutant Grid -->
+    <section id="panel-grid" class="deep-dive-panel instrument-card" hidden aria-label="Synchronized 3x3 Multi-Pollutant Grid">
+      <h2>Synchronized 3x3 Multi-Pollutant Grid</h2>
+      <div class="card-hint">All 9 statutory pollutants rendered simultaneously under synchronized temporal playback</div>
+      <div id="miniGridContainer" class="multi-pollutant-grid">
+        <!-- Rendered dynamically -->
+      </div>
+    </section>
+
+    <!-- Panel 2: Lahore Network Focus Drawer -->
+    <section id="panel-lahore" class="deep-dive-panel instrument-card" hidden aria-label="Lahore Intra-Urban Network Focus">
+      <h2>Lahore AQMS Network Focus & Wagha Border Inset</h2>
+      <div class="card-hint">High-resolution intra-urban monitoring across 11 EPA fixed & mobile AQMS stations</div>
+      <div class="lahore-focus-layout">
+        <canvas id="lahoreMapCanvas" class="lahore-map-canvas" aria-label="Lahore High-Resolution Station Inset Map"></canvas>
+        <div style="overflow-x: auto;">
+          <table class="compact-table">
+            <thead>
+              <tr>
+                <th>Station Name</th>
+                <th>Type</th>
+                <th class="r">Reading</th>
+                <th class="r">24-h Mean</th>
+              </tr>
+            </thead>
+            <tbody id="lahoreTableBody">
+              <tr><td>Town Hall (EPA HQ)</td><td>Fixed AQMS</td><td class="r num">492</td><td class="r num">468</td></tr>
+              <tr><td>Punjab University</td><td>Fixed AQMS</td><td class="r num">445</td><td class="r num">420</td></tr>
+              <tr><td>Gulberg Industrial</td><td>Fixed AQMS</td><td class="r num">480</td><td class="r num">460</td></tr>
+              <tr><td>Kot Lakhpat</td><td>Fixed AQMS</td><td class="r num">510</td><td class="r num">485</td></tr>
+              <tr><td>Wagha Border Post</td><td>Border Inset</td><td class="r num">540</td><td class="r num">512</td></tr>
+              <tr><td>Ravi Road Van</td><td>Mobile AQMS</td><td class="r num">465</td><td class="r num">440</td></tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </section>
+
+    <!-- Panel 3: Virtualized 41x216 Hourly Heatmap Matrix -->
+    <section id="panel-heatmap" class="deep-dive-panel instrument-card" hidden aria-label="Virtualized Hourly Heatmap Matrix">
+      <h2>Virtualized 41 Districts x 216 Hours Matrix</h2>
+      <div class="card-hint">Synoptic spatiotemporal matrix (8,856 cells) across the entire observation period</div>
+      <div id="heatmapContainer" class="heatmap-container">
+        <table id="heatmapTable" class="heatmap-table">
+          <!-- Dynamically populated -->
+        </table>
+      </div>
+    </section>
+
+    <!-- Panel 4: Transboundary Remote Sensing Hub -->
+    <section id="panel-transboundary" class="deep-dive-panel instrument-card" hidden aria-label="Transboundary Diagnostics Hub">
+      <h2>Transboundary Remote Sensing & Plume Hub</h2>
+      <div class="card-hint">120 km international border belt advection analysis, ECMWF IFS winds, and NASA FIRMS active fires</div>
+      <div class="transboundary-layout">
+        <div>
+          <div class="sensing-card-grid">
+            <div class="kpi-cell">
+              <div class="val num" style="color: #ff6b5e;">482.3 kg/s</div>
+              <div class="lbl">Inflow from India</div>
+            </div>
+            <div class="kpi-cell">
+              <div class="val num" style="color: #5fc4c4;">124.6 kg/s</div>
+              <div class="lbl">Outflow to India</div>
+            </div>
+            <div class="kpi-cell">
+              <div class="val num" style="color: #ff4a4a;">+357.7 kg/s</div>
+              <div class="lbl">Net Advective Balance</div>
+            </div>
+            <div class="kpi-cell">
+              <div class="val num">39 Nodes</div>
+              <div class="lbl">Border Normal Sensors</div>
+            </div>
+          </div>
+          <p style="font-size: 13px; color: var(--ink-secondary); line-height: 1.5; margin-bottom: 8px;">
+            Atmospheric flux coupling ECMWF IFS 10-m boundary winds and CAMS PM2.5 boundary perimeter transects indicates active transboundary transport corridors across Wagha, Kasur, and Narowal.
+          </p>
+        </div>
+        <div>
+          <h3 style="font-family: var(--font-display); font-size: 18px; margin-bottom: 6px;">Cross-Border IQAir Anchor Cities</h3>
+          <table class="compact-table">
+            <thead>
+              <tr><th>City</th><th>Distance to Border</th><th class="r">AQI (US EPA)</th><th>Status</th></tr>
+            </thead>
+            <tbody>
+              <tr><td>Amritsar</td><td>28 km</td><td class="r num" style="color: #c94a29;">185</td><td>Unhealthy</td></tr>
+              <tr><td>Firozpur</td><td>12 km</td><td class="r num" style="color: #c94a29;">178</td><td>Unhealthy</td></tr>
+              <tr><td>Jalandhar</td><td>82 km</td><td class="r num" style="color: #7a325d;">240</td><td>Very Unhealthy</td></tr>
+              <tr><td>Ludhiana</td><td>125 km</td><td class="r num" style="color: #7a325d;">265</td><td>Very Unhealthy</td></tr>
+              <tr><td>Delhi NCR</td><td>360 km</td><td class="r num" style="color: #4a154b;">385</td><td>Hazardous</td></tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </section>
+
+    <!-- ====================================================================
+         CUSTOM CSV UPLOAD MODAL
+         ==================================================================== -->
+    <div id="csvModal" class="modal-overlay" hidden role="dialog" aria-modal="true" aria-labelledby="csvModalHeading">
+      <div class="modal-box">
+        <div class="modal-header">
+          <h2 id="csvModalHeading">Ingest Custom CSV Dataset</h2>
+          <button type="button" id="csvModalClose" class="close-btn" aria-label="Close Modal">&times;</button>
+        </div>
+        <p style="font-size: 13px; color: var(--ink-secondary); margin-bottom: 12px;">
+          Upload ground observation data in comma-separated format. Supported fields: <code>timestamp</code>, <code>station_id</code>, <code>district</code>, <code>latitude</code>, <code>longitude</code>, <code>aqi</code>, <code>pm25</code>, <code>pm10</code>, <code>wind_speed</code>, <code>wind_direction</code>.
+        </p>
+        <div style="display: flex; flex-direction: column; gap: 10px;">
+          <input type="file" id="csvFileInput" accept=".csv" aria-label="Select CSV file">
+          <div id="csvQuarantineArea"></div>
+          <div style="display: flex; justify-content: flex-end; gap: 8px; margin-top: 10px;">
+            <button type="button" class="primary" id="csvUploadSubmit">Upload Dataset</button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+  </div>
+
+  <!-- Application Bootstrap Modules -->
+  <script type="module" src="/static/js/app.js"></script>
+</body>
+</html>

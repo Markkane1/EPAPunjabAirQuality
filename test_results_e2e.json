@@ -1,0 +1,274 @@
+{
+  "timestamp": "2026-11-11T10:59:38.108242+00:00",
+  "status": "PASSED",
+  "environment": {
+    "os": "Windows",
+    "os_release": "11",
+    "python_version": "3.14.7",
+    "pytest_installed": true
+  },
+  "summary": {
+    "total_tests": 50,
+    "passed": 50,
+    "failed": 0,
+    "duration_seconds": 1.955
+  },
+  "tiers": [
+    {
+      "tier": "Tier 1",
+      "name": "Feature Coverage & Contract Validation",
+      "filename": "test_tier1_feature_coverage.py",
+      "description": "Happy-path isolation tests for pure transforms, schemas, and API contracts",
+      "status": "PASSED",
+      "duration_seconds": 0.536,
+      "total": 13,
+      "passed": 13,
+      "failed": 0,
+      "tests": [
+        {
+          "test_id": "tests/e2e/test_tier1_feature_coverage.py::TestTier1MathematicalTransforms::test_haversine_geodesic_distance",
+          "status": "PASSED"
+        },
+        {
+          "test_id": "tests/e2e/test_tier1_feature_coverage.py::TestTier1MathematicalTransforms::test_discrete_geodesic_idw_interpolation",
+          "status": "PASSED"
+        },
+        {
+          "test_id": "tests/e2e/test_tier1_feature_coverage.py::TestTier1MathematicalTransforms::test_vector_wind_conversion",
+          "status": "PASSED"
+        },
+        {
+          "test_id": "tests/e2e/test_tier1_feature_coverage.py::TestTier1MathematicalTransforms::test_cpf_wind_rose_16_sectors",
+          "status": "PASSED"
+        },
+        {
+          "test_id": "tests/e2e/test_tier1_feature_coverage.py::TestTier1MathematicalTransforms::test_advection_transport_flux",
+          "status": "PASSED"
+        },
+        {
+          "test_id": "tests/e2e/test_tier1_feature_coverage.py::TestTier1MathematicalTransforms::test_pepc_piecewise_linear_aqi",
+          "status": "PASSED"
+        },
+        {
+          "test_id": "tests/e2e/test_tier1_feature_coverage.py::TestTier1MathematicalTransforms::test_pepc_composite_aqi_and_colors",
+          "status": "PASSED"
+        },
+        {
+          "test_id": "tests/e2e/test_tier1_feature_coverage.py::TestTier1MathematicalTransforms::test_temporal_qc_cleaning",
+          "status": "PASSED"
+        },
+        {
+          "test_id": "tests/e2e/test_tier1_feature_coverage.py::TestTier1MathematicalTransforms::test_equirectangular_projection",
+          "status": "PASSED"
+        },
+        {
+          "test_id": "tests/e2e/test_tier1_feature_coverage.py::TestTier1SchemasAndDataContracts::test_raw_station_measurement_schema_valid",
+          "status": "PASSED"
+        },
+        {
+          "test_id": "tests/e2e/test_tier1_feature_coverage.py::TestTier1SchemasAndDataContracts::test_user_csv_row_schema_valid",
+          "status": "PASSED"
+        },
+        {
+          "test_id": "tests/e2e/test_tier1_feature_coverage.py::TestTier1SchemasAndDataContracts::test_csv_fixture_ingestion_parsing",
+          "status": "PASSED"
+        },
+        {
+          "test_id": "tests/e2e/test_tier1_feature_coverage.py::TestTier1APIEndpointContracts::test_api_route_specifications_present",
+          "status": "PASSED"
+        }
+      ],
+      "raw_output": ""
+    },
+    {
+      "tier": "Tier 2",
+      "name": "Boundary, Corner & Limit Cases",
+      "filename": "test_tier2_boundary_corner.py",
+      "description": "Extreme values, calm cutoffs, singularity clamping, sensor holds, and physical guards",
+      "status": "PASSED",
+      "duration_seconds": 0.453,
+      "total": 11,
+      "passed": 11,
+      "failed": 0,
+      "tests": [
+        {
+          "test_id": "tests/e2e/test_tier2_boundary_corner.py::TestTier2BoundaryValues::test_maximum_concentration_boundary",
+          "status": "PASSED"
+        },
+        {
+          "test_id": "tests/e2e/test_tier2_boundary_corner.py::TestTier2BoundaryValues::test_geographic_coordinate_boundaries",
+          "status": "PASSED"
+        },
+        {
+          "test_id": "tests/e2e/test_tier2_boundary_corner.py::TestTier2BoundaryValues::test_calm_wind_exclusion_boundary",
+          "status": "PASSED"
+        },
+        {
+          "test_id": "tests/e2e/test_tier2_boundary_corner.py::TestTier2BoundaryValues::test_idw_zero_distance_singularity_clamping",
+          "status": "PASSED"
+        },
+        {
+          "test_id": "tests/e2e/test_tier2_boundary_corner.py::TestTier2BoundaryValues::test_cpf_small_sample_suppression",
+          "status": "PASSED"
+        },
+        {
+          "test_id": "tests/e2e/test_tier2_boundary_corner.py::TestTier2BoundaryValues::test_advection_flux_distance_and_cone_limits",
+          "status": "PASSED"
+        },
+        {
+          "test_id": "tests/e2e/test_tier2_boundary_corner.py::TestTier2BoundaryValues::test_advection_flux_physical_dimension_guard_for_aqi",
+          "status": "PASSED"
+        },
+        {
+          "test_id": "tests/e2e/test_tier2_boundary_corner.py::TestTier2BoundaryValues::test_pepc_half_open_interval_boundaries",
+          "status": "PASSED"
+        },
+        {
+          "test_id": "tests/e2e/test_tier2_boundary_corner.py::TestTier2BoundaryValues::test_logger_hold_index_guard_and_aqi_exemption",
+          "status": "PASSED"
+        },
+        {
+          "test_id": "tests/e2e/test_tier2_boundary_corner.py::TestTier2BoundaryValues::test_wazirabad_anemometer_blacklist_contract",
+          "status": "PASSED"
+        },
+        {
+          "test_id": "tests/e2e/test_tier2_boundary_corner.py::TestTier2BoundaryValues::test_completeness_75_percent_cutoff_rule",
+          "status": "PASSED"
+        }
+      ],
+      "raw_output": ""
+    },
+    {
+      "tier": "Tier 3",
+      "name": "Pairwise Combinations & Cross-Feature Dataflow",
+      "filename": "test_tier3_pairwise_combinations.py",
+      "description": "Cross-pollutant interactions, wind kinematics, and multi-step pipeline cascades",
+      "status": "PASSED",
+      "duration_seconds": 0.461,
+      "total": 21,
+      "passed": 21,
+      "failed": 0,
+      "tests": [
+        {
+          "test_id": "tests/e2e/test_tier3_pairwise_combinations.py::TestTier3MeteorologicalCombinations::test_wind_vector_pairwise_kinematics[0.0-0.2]",
+          "status": "PASSED"
+        },
+        {
+          "test_id": "tests/e2e/test_tier3_pairwise_combinations.py::TestTier3MeteorologicalCombinations::test_wind_vector_pairwise_kinematics[0.0-1.0]",
+          "status": "PASSED"
+        },
+        {
+          "test_id": "tests/e2e/test_tier3_pairwise_combinations.py::TestTier3MeteorologicalCombinations::test_wind_vector_pairwise_kinematics[0.0-5.0]",
+          "status": "PASSED"
+        },
+        {
+          "test_id": "tests/e2e/test_tier3_pairwise_combinations.py::TestTier3MeteorologicalCombinations::test_wind_vector_pairwise_kinematics[0.0-25.0]",
+          "status": "PASSED"
+        },
+        {
+          "test_id": "tests/e2e/test_tier3_pairwise_combinations.py::TestTier3MeteorologicalCombinations::test_wind_vector_pairwise_kinematics[90.0-0.2]",
+          "status": "PASSED"
+        },
+        {
+          "test_id": "tests/e2e/test_tier3_pairwise_combinations.py::TestTier3MeteorologicalCombinations::test_wind_vector_pairwise_kinematics[90.0-1.0]",
+          "status": "PASSED"
+        },
+        {
+          "test_id": "tests/e2e/test_tier3_pairwise_combinations.py::TestTier3MeteorologicalCombinations::test_wind_vector_pairwise_kinematics[90.0-5.0]",
+          "status": "PASSED"
+        },
+        {
+          "test_id": "tests/e2e/test_tier3_pairwise_combinations.py::TestTier3MeteorologicalCombinations::test_wind_vector_pairwise_kinematics[90.0-25.0]",
+          "status": "PASSED"
+        },
+        {
+          "test_id": "tests/e2e/test_tier3_pairwise_combinations.py::TestTier3MeteorologicalCombinations::test_wind_vector_pairwise_kinematics[180.0-0.2]",
+          "status": "PASSED"
+        },
+        {
+          "test_id": "tests/e2e/test_tier3_pairwise_combinations.py::TestTier3MeteorologicalCombinations::test_wind_vector_pairwise_kinematics[180.0-1.0]",
+          "status": "PASSED"
+        },
+        {
+          "test_id": "tests/e2e/test_tier3_pairwise_combinations.py::TestTier3MeteorologicalCombinations::test_wind_vector_pairwise_kinematics[180.0-5.0]",
+          "status": "PASSED"
+        },
+        {
+          "test_id": "tests/e2e/test_tier3_pairwise_combinations.py::TestTier3MeteorologicalCombinations::test_wind_vector_pairwise_kinematics[180.0-25.0]",
+          "status": "PASSED"
+        },
+        {
+          "test_id": "tests/e2e/test_tier3_pairwise_combinations.py::TestTier3MeteorologicalCombinations::test_wind_vector_pairwise_kinematics[270.0-0.2]",
+          "status": "PASSED"
+        },
+        {
+          "test_id": "tests/e2e/test_tier3_pairwise_combinations.py::TestTier3MeteorologicalCombinations::test_wind_vector_pairwise_kinematics[270.0-1.0]",
+          "status": "PASSED"
+        },
+        {
+          "test_id": "tests/e2e/test_tier3_pairwise_combinations.py::TestTier3MeteorologicalCombinations::test_wind_vector_pairwise_kinematics[270.0-5.0]",
+          "status": "PASSED"
+        },
+        {
+          "test_id": "tests/e2e/test_tier3_pairwise_combinations.py::TestTier3MeteorologicalCombinations::test_wind_vector_pairwise_kinematics[270.0-25.0]",
+          "status": "PASSED"
+        },
+        {
+          "test_id": "tests/e2e/test_tier3_pairwise_combinations.py::TestTier3CrossPollutantCombinations::test_multipollutant_aqi_monotonicity",
+          "status": "PASSED"
+        },
+        {
+          "test_id": "tests/e2e/test_tier3_pairwise_combinations.py::TestTier3CrossPollutantCombinations::test_composite_aqi_governance",
+          "status": "PASSED"
+        },
+        {
+          "test_id": "tests/e2e/test_tier3_pairwise_combinations.py::TestTier3CrossFeatureDataflow::test_csv_upload_triggers_idw_recalculation",
+          "status": "PASSED"
+        },
+        {
+          "test_id": "tests/e2e/test_tier3_pairwise_combinations.py::TestTier3CrossFeatureDataflow::test_wind_update_recalculates_cpf_and_flux",
+          "status": "PASSED"
+        },
+        {
+          "test_id": "tests/e2e/test_tier3_pairwise_combinations.py::TestTier3CrossFeatureDataflow::test_top_60_pathway_truncation_contract",
+          "status": "PASSED"
+        }
+      ],
+      "raw_output": ""
+    },
+    {
+      "tier": "Tier 4",
+      "name": "Real-World Operational Scenarios",
+      "filename": "test_tier4_real_world_scenarios.py",
+      "description": "Severe smog episode, offline fallback, user CSV upload, border plume, and multi-station",
+      "status": "PASSED",
+      "duration_seconds": 0.505,
+      "total": 5,
+      "passed": 5,
+      "failed": 0,
+      "tests": [
+        {
+          "test_id": "tests/e2e/test_tier4_real_world_scenarios.py::TestTier4RealWorldScenarios::test_scenario_1_severe_smog_inversion_episode",
+          "status": "PASSED"
+        },
+        {
+          "test_id": "tests/e2e/test_tier4_real_world_scenarios.py::TestTier4RealWorldScenarios::test_scenario_2_offline_fallback_and_graceful_degradation",
+          "status": "PASSED"
+        },
+        {
+          "test_id": "tests/e2e/test_tier4_real_world_scenarios.py::TestTier4RealWorldScenarios::test_scenario_3_custom_user_csv_dynamic_reinterpolation",
+          "status": "PASSED"
+        },
+        {
+          "test_id": "tests/e2e/test_tier4_real_world_scenarios.py::TestTier4RealWorldScenarios::test_scenario_4_cross_border_plume_inflow_analysis",
+          "status": "PASSED"
+        },
+        {
+          "test_id": "tests/e2e/test_tier4_real_world_scenarios.py::TestTier4RealWorldScenarios::test_scenario_5_multistation_district_disaggregation",
+          "status": "PASSED"
+        }
+      ],
+      "raw_output": ""
+    }
+  ]
+}

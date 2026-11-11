@@ -1,0 +1,7 @@
+timestamp,station_id,station_name,district,latitude,longitude,pollutant,value,wind_speed,wind_direction
+2026-11-10T15:00:00Z,PK_NRW_001,Narowal City,Narowal,32.1020,74.8730,pm25,320.0,3.5,85.0
+2026-11-10T15:00:00Z,PK_SKT_001,Sialkot Cantt,Sialkot,32.4945,74.5229,pm25,310.0,3.2,80.0
+2026-11-10T15:00:00Z,PK_LHR_001,Town Hall,Lahore,31.5704,74.3096,pm25,350.0,2.8,90.0
+2026-11-10T15:00:00Z,PK_KSR_001,Kasur City,Kasur,31.1179,74.4460,pm25,380.0,3.8,75.0
+2026-11-10T15:00:00Z,PK_OK_001,Okara ByPass,Okara,30.8080,73.4458,pm25,290.0,2.5,88.0
+2026-11-10T15:00:00Z,PK_BWN_001,Bahawalnagar Mandi,Bahawalnagar,29.9980,73.2530,pm25,260.0,2.9,95.0

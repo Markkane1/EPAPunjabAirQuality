@@ -1,0 +1,968 @@
+/* ==========================================================================
+   PUNJAB AIR QUALITY OPERATIONAL CONSOLE - DESIGN SYSTEM & ATMOSPHERIC TOKENS
+   Strict WCAG 2.1 AAA Text Contrast | Scientific Instrument Density ("Operate")
+   ========================================================================== */
+
+:root {
+  /* Surface & Container Colors (Dark Console Default) */
+  --bg-canvas: #0f1716;
+  --bg-panel: #152120;
+  --bg-panel-elevated: #1c2b2a;
+  --bg-panel-overlay: rgba(21, 33, 32, 0.95);
+  --border-subtle: #2a3a38;
+  --border-strong: #4f625e;
+
+  /* Text & Ink Tokens (WCAG 2.1 AAA Compliant) */
+  --ink-primary: #e3ece9;
+  --ink-secondary: #93a39e;
+  --ink-tertiary: #6b7a76;
+
+  /* Accent & Instrument Status */
+  --accent: #5fc4c4;
+  --accent-soft: rgba(95, 196, 196, 0.16);
+  --pulse-live: #00B050;
+  --pulse-warn: #ED7D31;
+  --pulse-user: #5fc4c4;
+
+  /* Map Cartography Fills */
+  --geo-sea: #0b1211;
+  --geo-land: #162120;
+  --geo-punjab: #1d2d2c;
+  --geo-district-border: #4f625e;
+  --geo-international: #ff7a6b;
+  --geo-india-fill: #26231a;
+
+  /* Environmental Flow Dynamics */
+  --flow-link: #e3f4f2;
+  --flow-particle: rgba(225, 245, 242, 0.35);
+  --flow-inflow: #ff6b5e;
+  --flow-outflow: #5fc4c4;
+
+  /* PEPC 7-Stop Statutory Color Palette */
+  --pepc-good: #2d7f5e;
+  --pepc-moderate: #6aa84f;
+  --pepc-unhealthy-sensitive: #d49a3d;
+  --pepc-unhealthy: #c94a29;
+  --pepc-very-unhealthy: #7a325d;
+  --pepc-hazardous: #4a154b;
+  --pepc-extreme: #2a0845;
+
+  /* Typography */
+  --font-display: "Barlow Condensed", "Arial Narrow", -apple-system, sans-serif;
+  --font-body: "Source Sans 3", -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+  --font-mono: "JetBrains Mono", ui-monospace, "SFMono-Regular", Menlo, monospace;
+
+  /* Dimensions & Spacing */
+  --radius-xs: 2px;
+  --radius-sm: 4px;
+  --radius-md: 6px;
+  --sidebar-w: 360px;
+}
+
+/* Light Theme Tokens */
+:root[data-theme="light"] {
+  --bg-canvas: #eef1ef;
+  --bg-panel: #fbfcfb;
+  --bg-panel-elevated: #ffffff;
+  --bg-panel-overlay: rgba(251, 252, 251, 0.95);
+  --border-subtle: #d3dad7;
+  --border-strong: #9aa6a2;
+
+  --ink-primary: #17221f;
+  --ink-secondary: #5b6964;
+  --ink-tertiary: #7e8c87;
+
+  --accent: #0d6e72;
+  --accent-soft: rgba(13, 110, 114, 0.14);
+  --pulse-live: #00873d;
+  --pulse-warn: #cf6217;
+  --pulse-user: #0d6e72;
+
+  --geo-sea: #e3e8e5;
+  --geo-land: #eceeec;
+  --geo-punjab: #f8f9f8;
+  --geo-district-border: #9aa6a2;
+  --geo-international: #a3261f;
+  --geo-india-fill: #efe8d8;
+
+  --flow-link: #18302f;
+  --flow-particle: rgba(20, 40, 40, 0.32);
+  --flow-inflow: #c4312a;
+  --flow-outflow: #0d6e72;
+}
+
+/* Global Reset & Base */
+*, *::before, *::after {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+}
+
+html {
+  font-family: var(--font-body);
+  font-size: 14px;
+  line-height: 1.45;
+  color: var(--ink-primary);
+  background-color: var(--bg-canvas);
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+body {
+  min-height: 100vh;
+  padding: 12px 16px 36px;
+  background-color: var(--bg-canvas);
+  color: var(--ink-primary);
+}
+
+.tabular-nums, .num {
+  font-family: var(--font-mono);
+  font-variant-numeric: tabular-nums;
+}
+
+/* Master Layout Grid */
+.app-container {
+  max-width: 1720px;
+  margin: 0 auto;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+/* Buttons, Selects, Inputs */
+button, select, input {
+  font-family: var(--font-body);
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--ink-primary);
+  background: var(--bg-panel);
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-sm);
+  padding: 5px 10px;
+  cursor: pointer;
+  transition: border-color 0.15s ease, background-color 0.15s ease;
+}
+
+button:hover, select:hover {
+  border-color: var(--border-strong);
+  background: var(--bg-panel-elevated);
+}
+
+button:focus-visible, select:focus-visible, input:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 1px;
+}
+
+button.primary {
+  background: var(--accent);
+  color: var(--bg-canvas);
+  border-color: var(--accent);
+}
+
+button.primary:hover {
+  filter: brightness(1.1);
+}
+
+/* Modal styles */
+.modal-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(0, 0, 0, 0.7);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 1000;
+  backdrop-filter: blur(2px);
+}
+.modal-overlay[hidden] {
+  display: none !important;
+}
+.modal-box {
+  background: var(--bg-panel);
+  border: 1px solid var(--border-strong);
+  border-radius: var(--radius-md);
+  padding: 20px 24px;
+  max-width: 760px;
+  width: 92%;
+  max-height: 85vh;
+  overflow-y: auto;
+}
+.modal-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 14px;
+}
+.modal-header h2 {
+  font-family: var(--font-display);
+  font-size: 22px;
+  font-weight: 700;
+}
+.close-btn {
+  background: transparent;
+  border: none;
+  font-size: 18px;
+  cursor: pointer;
+  color: var(--ink-secondary);
+}
+
+/* CSV Quarantine Inspector Styling */
+.quarantine-table-wrap {
+  max-height: 240px;
+  overflow-y: auto;
+  overflow-x: auto;
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-sm);
+  background: var(--bg-canvas);
+}
+
+.quarantine-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 11px;
+}
+
+.quarantine-table th {
+  position: sticky;
+  top: 0;
+  background: var(--bg-panel-elevated);
+  color: var(--ink-secondary);
+  font-family: var(--font-mono);
+  font-size: 10px;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  padding: 6px 8px;
+  border-bottom: 1px solid var(--border-strong);
+  z-index: 2;
+  white-space: nowrap;
+}
+
+.quarantine-table td {
+  padding: 6px 8px;
+  border-bottom: 1px solid var(--border-subtle);
+  color: var(--ink-primary);
+  vertical-align: top;
+}
+
+/* ==========================================================================
+   ZONE 1: COMMAND HEADER & NAVIGATION STRIP
+   ========================================================================== */
+.zone-1-header {
+  background: var(--bg-panel);
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-md);
+  padding: 10px 16px;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.brand-section {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+}
+
+.live-pulse-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-family: var(--font-mono);
+  font-size: 11px;
+  font-weight: 600;
+  padding: 3px 8px;
+  border-radius: 99px;
+  background: rgba(0, 176, 80, 0.15);
+  color: var(--pulse-live);
+  border: 1px solid var(--pulse-live);
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+}
+
+.live-pulse-badge.warn {
+  background: rgba(237, 125, 49, 0.15);
+  color: var(--pulse-warn);
+  border-color: var(--pulse-warn);
+}
+
+.live-pulse-badge.user {
+  background: rgba(95, 196, 196, 0.15);
+  color: var(--pulse-user);
+  border-color: var(--pulse-user);
+}
+
+.pulse-dot {
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background-color: currentColor;
+  animation: pulse-anim 2s infinite ease-in-out;
+}
+
+@keyframes pulse-anim {
+  0%, 100% { opacity: 1; transform: scale(1); }
+  50% { opacity: 0.4; transform: scale(0.85); }
+}
+
+.console-title-group h1 {
+  font-family: var(--font-display);
+  font-size: 24px;
+  font-weight: 700;
+  letter-spacing: 0.02em;
+  text-transform: uppercase;
+  line-height: 1;
+}
+
+.console-title-group .sub-org {
+  font-family: var(--font-mono);
+  font-size: 10px;
+  color: var(--ink-secondary);
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  margin-top: 2px;
+}
+
+.header-status-group {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.provincial-aqi-badge {
+  font-family: var(--font-display);
+  font-size: 16px;
+  font-weight: 700;
+  padding: 4px 10px;
+  border-radius: var(--radius-sm);
+  background-color: var(--pepc-very-unhealthy);
+  color: #ffffff;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  letter-spacing: 0.03em;
+}
+
+.clock-readout {
+  font-family: var(--font-mono);
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--ink-secondary);
+  background: var(--bg-canvas);
+  border: 1px solid var(--border-subtle);
+  padding: 4px 10px;
+  border-radius: var(--radius-sm);
+  white-space: nowrap;
+}
+
+.nav-tabs-group {
+  display: flex;
+  gap: 4px;
+}
+
+.nav-tab-btn {
+  font-family: var(--font-body);
+  font-size: 12px;
+  font-weight: 600;
+  padding: 5px 10px;
+  border: 1px solid var(--border-subtle);
+  background: var(--bg-panel);
+  color: var(--ink-secondary);
+}
+
+.nav-tab-btn[aria-selected="true"] {
+  background: var(--ink-primary);
+  color: var(--bg-panel);
+  border-color: var(--ink-primary);
+}
+
+.header-actions {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+/* ==========================================================================
+   ZONE 2: PRIMARY POLLUTANT SWITCHER
+   ========================================================================== */
+.zone-2-pollutants {
+  background: var(--bg-panel);
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-md);
+  padding: 8px 12px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  overflow-x: auto;
+}
+
+.pollutant-label-tag {
+  font-family: var(--font-mono);
+  font-size: 11px;
+  font-weight: 700;
+  color: var(--ink-secondary);
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  white-space: nowrap;
+  margin-right: 4px;
+}
+
+.pollutant-strip {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  flex-wrap: wrap;
+}
+
+.pol-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 4px 10px;
+  font-size: 13px;
+  border-radius: var(--radius-sm);
+  border: 1px solid var(--border-subtle);
+  background: var(--bg-panel);
+  color: var(--ink-primary);
+  cursor: pointer;
+  white-space: nowrap;
+}
+
+.pol-btn .species {
+  font-weight: 700;
+}
+
+.pol-btn .limit-badge {
+  font-family: var(--font-mono);
+  font-size: 10px;
+  font-weight: 600;
+  padding: 1px 4px;
+  border-radius: var(--radius-xs);
+  background: var(--bg-panel-elevated);
+  color: var(--ink-secondary);
+}
+
+.pol-btn[aria-checked="true"] {
+  background: var(--ink-primary);
+  color: var(--bg-panel);
+  border-color: var(--ink-primary);
+}
+
+.pol-btn[aria-checked="true"] .limit-badge {
+  background: var(--bg-panel);
+  color: var(--ink-primary);
+}
+
+/* ==========================================================================
+   ZONES 3 & 4: CONSOLE CORE (MAP VIEWPORT + TELEMETRY SIDEBAR)
+   ========================================================================== */
+.console-body {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) var(--sidebar-w);
+  gap: 12px;
+  align-items: start;
+}
+
+@media (max-width: 1100px) {
+  .console-body {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}
+
+/* Zone 3: Geographic Map Viewport */
+.zone-3-viewport {
+  background: var(--geo-sea);
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-md);
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+}
+
+.viewport-canvas-container {
+  position: relative;
+  width: 100%;
+  aspect-ratio: 16 / 9;
+  min-height: 480px;
+  background: var(--geo-sea);
+}
+
+canvas.map-canvas {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  display: block;
+  cursor: crosshair;
+}
+
+/* HUD Overlay Elements */
+.hud-clock-deck {
+  position: absolute;
+  top: 14px;
+  left: 16px;
+  pointer-events: none;
+  z-index: 10;
+  background: var(--bg-panel-overlay);
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-sm);
+  padding: 8px 12px;
+  backdrop-filter: blur(4px);
+}
+
+.hud-clock-deck .hud-date {
+  font-family: var(--font-mono);
+  font-size: 11px;
+  font-weight: 600;
+  color: var(--ink-secondary);
+  text-transform: uppercase;
+}
+
+.hud-clock-deck .hud-time {
+  font-family: var(--font-display);
+  font-size: 38px;
+  font-weight: 700;
+  line-height: 1;
+  color: var(--ink-primary);
+}
+
+.hud-clock-deck .hud-pollutant-pill {
+  font-family: var(--font-mono);
+  font-size: 12px;
+  font-weight: 700;
+  color: var(--accent);
+  margin-top: 2px;
+}
+
+.hud-legend-deck {
+  position: absolute;
+  bottom: 14px;
+  right: 16px;
+  z-index: 10;
+  background: var(--bg-panel-overlay);
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-sm);
+  padding: 10px 12px;
+  width: min(290px, 60%);
+  backdrop-filter: blur(4px);
+}
+
+.legend-header {
+  font-family: var(--font-mono);
+  font-size: 11px;
+  font-weight: 700;
+  color: var(--ink-secondary);
+  margin-bottom: 6px;
+  display: flex;
+  justify-content: space-between;
+}
+
+.legend-color-bar {
+  height: 10px;
+  border-radius: var(--radius-xs);
+  margin-bottom: 4px;
+  border: 1px solid rgba(0, 0, 0, 0.2);
+}
+
+.legend-ticks {
+  position: relative;
+  height: 14px;
+  font-family: var(--font-mono);
+  font-size: 10px;
+  color: var(--ink-secondary);
+}
+
+.legend-ticks span {
+  position: absolute;
+  transform: translateX(-50%);
+}
+
+.legend-footer {
+  margin-top: 8px;
+  padding-top: 6px;
+  border-top: 1px solid var(--border-subtle);
+  font-size: 11px;
+  color: var(--ink-tertiary);
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.legend-swatch {
+  display: inline-block;
+  width: 9px;
+  height: 9px;
+  border-radius: 2px;
+  margin-right: 4px;
+  vertical-align: middle;
+}
+
+/* Scrubber Deck Controls */
+.scrubber-deck {
+  background: var(--bg-panel);
+  border-top: 1px solid var(--border-subtle);
+  padding: 10px 16px;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 10px 16px;
+}
+
+.scrubber-playback-group {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.range-scrubber-input {
+  flex: 1 1 240px;
+  min-width: 140px;
+  accent-color: var(--accent);
+  cursor: pointer;
+}
+
+.scrubber-options-group {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  flex-wrap: wrap;
+}
+
+.scrubber-options-group label {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  font-size: 12px;
+  color: var(--ink-secondary);
+  cursor: pointer;
+}
+
+/* Zone 4: Telemetry Sidebar */
+.zone-4-sidebar {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.instrument-card {
+  background: var(--bg-panel);
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-md);
+  padding: 12px 14px;
+}
+
+.instrument-card h2 {
+  font-family: var(--font-display);
+  font-size: 20px;
+  font-weight: 700;
+  letter-spacing: 0.02em;
+  margin-bottom: 4px;
+}
+
+.instrument-card .card-hint {
+  font-size: 11px;
+  color: var(--ink-tertiary);
+  margin-bottom: 8px;
+}
+
+/* Provincial KPI Grid */
+.kpi-metrics-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 8px;
+  margin-bottom: 8px;
+}
+
+.kpi-cell {
+  background: var(--bg-panel-elevated);
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-sm);
+  padding: 6px 8px;
+}
+
+.kpi-cell .val {
+  font-family: var(--font-mono);
+  font-size: 18px;
+  font-weight: 700;
+  line-height: 1.1;
+  color: var(--ink-primary);
+}
+
+.kpi-cell .lbl {
+  font-size: 10px;
+  color: var(--ink-secondary);
+  text-transform: uppercase;
+  margin-top: 2px;
+}
+
+canvas.sparkline-canvas {
+  width: 100%;
+  height: 65px;
+  display: block;
+  background: var(--bg-canvas);
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-sm);
+}
+
+/* Tables in Sidebar */
+.compact-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 12px;
+}
+
+.compact-table th {
+  font-family: var(--font-mono);
+  font-size: 10px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: var(--ink-secondary);
+  padding: 4px 6px;
+  border-bottom: 1px solid var(--border-subtle);
+  text-align: left;
+}
+
+.compact-table td {
+  padding: 4px 6px;
+  border-bottom: 1px solid var(--border-subtle);
+}
+
+.compact-table th.r, .compact-table td.r {
+  text-align: right;
+}
+
+/* Ranked District Exceedance List */
+.district-ranked-list {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  max-height: 280px;
+  overflow-y: auto;
+  padding-right: 4px;
+}
+
+.district-row {
+  display: grid;
+  grid-template-columns: 110px 1fr 50px;
+  align-items: center;
+  gap: 8px;
+  padding: 2px 6px;
+  border-radius: var(--radius-xs);
+  cursor: pointer;
+  font-size: 12px;
+}
+
+.district-row:hover, .district-row.selected {
+  background: var(--accent-soft);
+}
+
+.district-row .name {
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.district-row .bar-track {
+  height: 8px;
+  background: var(--bg-canvas);
+  border-radius: var(--radius-xs);
+  overflow: hidden;
+  position: relative;
+}
+
+.district-row .bar-fill {
+  height: 100%;
+  border-radius: var(--radius-xs);
+}
+
+.district-row .bar-peqs-marker {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  width: 2px;
+  background: #ff4a4a;
+}
+
+.district-row .val-box {
+  text-align: right;
+  font-family: var(--font-mono);
+  font-size: 11px;
+}
+
+/* CPF Polar Rose Canvas */
+canvas.rose-canvas {
+  width: 100%;
+  max-width: 240px;
+  aspect-ratio: 1;
+  display: block;
+  margin: 6px auto;
+}
+
+/* ==========================================================================
+   ZONE 5: DEEP-DIVE PANELS
+   ========================================================================== */
+.zone-5-panels {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.deep-dive-panel {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.deep-dive-panel[hidden] {
+  display: none !important;
+}
+
+/* 3x3 Multi-Pollutant Grid */
+.multi-pollutant-grid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 12px;
+}
+
+@media (max-width: 1150px) {
+  .multi-pollutant-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+@media (max-width: 600px) {
+  .multi-pollutant-grid {
+    grid-template-columns: 1fr;
+  }
+}
+
+.mini-pollutant-card {
+  background: var(--bg-panel);
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-sm);
+  overflow: hidden;
+}
+
+.mini-card-header {
+  padding: 6px 10px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  background: var(--bg-panel-elevated);
+  border-bottom: 1px solid var(--border-subtle);
+}
+
+.mini-card-header .species-title {
+  font-family: var(--font-display);
+  font-size: 18px;
+  font-weight: 700;
+}
+
+.mini-card-header .peqs-tag {
+  font-family: var(--font-mono);
+  font-size: 10px;
+  color: var(--ink-secondary);
+}
+
+canvas.mini-map-canvas {
+  width: 100%;
+  aspect-ratio: 16 / 9;
+  display: block;
+  background: var(--geo-sea);
+}
+
+/* Lahore Focus Drawer */
+.lahore-focus-layout {
+  display: grid;
+  grid-template-columns: minmax(0, 1.4fr) minmax(0, 1fr);
+  gap: 16px;
+}
+
+@media (max-width: 900px) {
+  .lahore-focus-layout {
+    grid-template-columns: 1fr;
+  }
+}
+
+canvas.lahore-map-canvas {
+  width: 100%;
+  aspect-ratio: 4 / 3;
+  display: block;
+  background: var(--geo-sea);
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-sm);
+}
+
+/* Virtualized 41x216 Heatmap Matrix */
+.heatmap-container {
+  overflow-x: auto;
+  max-height: 480px;
+  overflow-y: auto;
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-sm);
+  background: var(--bg-panel);
+}
+
+table.heatmap-table {
+  border-collapse: collapse;
+  font-family: var(--font-mono);
+  font-size: 11px;
+  min-width: 100%;
+}
+
+table.heatmap-table th, table.heatmap-table td {
+  padding: 3px 5px;
+  text-align: right;
+  white-space: nowrap;
+  border-bottom: 1px solid var(--border-subtle);
+}
+
+table.heatmap-table th.sticky-district, table.heatmap-table td.sticky-district {
+  position: sticky;
+  left: 0;
+  background: var(--bg-panel-elevated);
+  font-family: var(--font-body);
+  font-weight: 600;
+  text-align: left;
+  z-index: 2;
+  border-right: 1px solid var(--border-subtle);
+}
+
+table.heatmap-table td.active-col {
+  outline: 2px solid var(--accent);
+  outline-offset: -1px;
+}
+
+/* Transboundary Remote Sensing Hub */
+.transboundary-layout {
+  display: grid;
+  grid-template-columns: minmax(0, 1.1fr) minmax(0, 1fr);
+  gap: 16px;
+}
+
+@media (max-width: 900px) {
+  .transboundary-layout {
+    grid-template-columns: 1fr;
+  }
+}
+
+.sensing-card-grid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 10px;
+  margin-bottom: 12px;
+}
+
+.firms-fire-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  font-family: var(--font-mono);
+  font-size: 11px;
+  color: #ff5e5e;
+}

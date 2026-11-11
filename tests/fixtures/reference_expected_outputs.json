@@ -1,0 +1,80 @@
+{
+  "haversine": {
+    "lahore_to_kasur_km": 45.51775,
+    "lahore_to_faisalabad_km": 128.52,
+    "lahore_to_rawalpindi_km": 268.45
+  },
+  "idw": {
+    "d0_clamped_km": 5.0,
+    "power": 2.0,
+    "coincident_point_weight": 0.04
+  },
+  "wind": {
+    "calm_threshold_ms": 0.5,
+    "max_speed_ms": 30.0,
+    "polar_90deg_10ms": {
+      "speed": 10.0,
+      "direction": 90.0,
+      "u": -10.0,
+      "v": 0.0
+    },
+    "polar_180deg_10ms": {
+      "speed": 10.0,
+      "direction": 180.0,
+      "u": 0.0,
+      "v": 10.0
+    },
+    "polar_270deg_10ms": {
+      "speed": 10.0,
+      "direction": 270.0,
+      "u": 10.0,
+      "v": 0.0
+    },
+    "polar_0deg_10ms": {
+      "speed": 10.0,
+      "direction": 0.0,
+      "u": 0.0,
+      "v": -10.0
+    }
+  },
+  "cpf_sectors": {
+    "sector_count": 16,
+    "sector_width_deg": 22.5,
+    "north_sector": 0,
+    "east_sector": 4,
+    "south_sector": 8,
+    "west_sector": 12,
+    "min_samples_threshold": 6,
+    "calm_cutoff_ms": 0.5
+  },
+  "pepc_aqi": {
+    "pm25_breakpoints": [
+      {"concentration": 15.0, "expected_aqi": 50, "category": "Good"},
+      {"concentration": 25.0, "expected_aqi": 75, "category": "Satisfactory"},
+      {"concentration": 35.0, "expected_aqi": 100, "category": "Satisfactory"},
+      {"concentration": 52.5, "expected_aqi": 125, "category": "Moderate"},
+      {"concentration": 70.0, "expected_aqi": 150, "category": "Moderate"},
+      {"concentration": 105.0, "expected_aqi": 175, "category": "Unhealthy Sensitive"},
+      {"concentration": 140.0, "expected_aqi": 200, "category": "Unhealthy Sensitive"},
+      {"concentration": 195.0, "expected_aqi": 250, "category": "Unhealthy"},
+      {"concentration": 250.0, "expected_aqi": 300, "category": "Unhealthy"},
+      {"concentration": 300.0, "expected_aqi": 350, "category": "Very Unhealthy"},
+      {"concentration": 350.0, "expected_aqi": 400, "category": "Very Unhealthy"},
+      {"concentration": 450.0, "expected_aqi": 500, "category": "Hazardous"}
+    ],
+    "composite_rule": "max(pm25_aqi, pm10_aqi)"
+  },
+  "advection_flux": {
+    "max_distance_km": 180.0,
+    "max_cone_deg": 35.0,
+    "residence_scale_km": 100.0,
+    "aqi_disallowed": true
+  },
+  "temporal_qc": {
+    "min_median_window_samples": 3,
+    "spike_multiplier_median": 4.0,
+    "spike_multiplier_ref": 3.0,
+    "logger_hold_consecutive_hours": 3,
+    "completeness_threshold_pct": 0.75
+  }
+}

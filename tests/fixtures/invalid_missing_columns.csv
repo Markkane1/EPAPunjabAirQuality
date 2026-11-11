@@ -1,0 +1,3 @@
+timestamp,station_id,station_name,district,pollutant,value,wind_speed,wind_direction
+2026-11-10T12:00:00Z,PK_INV_001,Broken Station,Lahore,pm25,120.0,2.0,90.0
+2026-11-10T12:00:00Z,PK_INV_002,Broken Station 2,Faisalabad,pm10,200.0,1.5,180.0

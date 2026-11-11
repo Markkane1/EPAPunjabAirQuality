@@ -1,0 +1,11 @@
+timestamp,station_id,station_name,district,latitude,longitude,pollutant,value,wind_speed,wind_direction
+2026-11-10T21:00:00Z,PK_LHR_001,Town Hall,Lahore,31.5704,74.3096,pm25,485.0,2.6,85.0
+2026-11-10T21:00:00Z,PK_LHR_001,Town Hall,Lahore,31.5704,74.3096,pm10,620.0,2.6,85.0
+2026-11-10T21:00:00Z,PK_LHR_002,Gulberg III,Lahore,31.5074,74.3533,pm25,512.0,2.4,90.0
+2026-11-10T21:00:00Z,PK_LHR_003,US Consulate,Lahore,31.5497,74.3436,pm25,495.0,2.5,88.0
+2026-11-10T21:00:00Z,PK_KSR_001,Kasur City,Kasur,31.1179,74.4460,pm25,460.0,3.1,80.0
+2026-11-10T21:00:00Z,PK_GRW_001,Gujranwala City,Gujranwala,32.1877,74.1945,pm25,420.0,2.0,95.0
+2026-11-10T21:00:00Z,PK_SHK_001,Sheikhupura ByPass,Sheikhupura,31.7131,73.9783,pm25,445.0,2.2,90.0
+2026-11-10T21:00:00Z,PK_SKT_001,Sialkot Cantt,Sialkot,32.4945,74.5229,pm25,395.0,2.8,75.0
+2026-11-10T21:00:00Z,PK_FSD_001,Faisalabad Clock Tower,Faisalabad,31.4187,73.0791,pm25,360.0,1.8,100.0
+2026-11-10T21:00:00Z,PK_OK_001,Okara ByPass,Okara,30.8080,73.4458,pm25,340.0,2.0,92.0
