@@ -130,6 +130,163 @@ export class ApiClient {
     return this.getFallbackTransboundary(pollutant);
   }
 
+  async getCrossBorderCities() {
+    try {
+      const resp = await fetch(`${this.baseUrl}/api/v1/observations/cross-border`);
+      if (resp.ok) {
+        const j = await resp.json();
+        return j.cities || [];
+      }
+    } catch (err) {
+      console.warn('API getCrossBorderCities offline:', err);
+    }
+    return [
+      { city: 'Amritsar', distance_km: 28, us_aqi: 185, pepc_aqi: 185, status: 'Unhealthy' },
+      { city: 'Firozpur', distance_km: 12, us_aqi: 178, pepc_aqi: 178, status: 'Unhealthy' },
+      { city: 'Jalandhar', distance_km: 82, us_aqi: 240, pepc_aqi: 240, status: 'Very Unhealthy' },
+      { city: 'Ludhiana', distance_km: 125, us_aqi: 265, pepc_aqi: 265, status: 'Very Unhealthy' },
+      { city: 'Delhi NCR', distance_km: 360, us_aqi: 385, pepc_aqi: 385, status: 'Hazardous' },
+    ];
+  }
+
+  async getRollingMean(entityType = 'district', entityId = 'Lahore', pollutant = 'PM2.5') {
+    try {
+      const params = new URLSearchParams({ entity_type: entityType, entity_id: entityId, pollutant });
+      const resp = await fetch(`${this.baseUrl}/api/v1/observations/rolling-mean?${params}`);
+      if (resp.ok) {
+        const j = await resp.json();
+        return j.rolling_24h_mean;
+      }
+    } catch (err) {
+      console.warn('API getRollingMean offline:', err);
+    }
+    return null;
+  }
+
+  async getActiveFires() {
+    try {
+      const resp = await fetch(`${this.baseUrl}/api/v1/observations/fires`);
+      if (resp.ok) {
+        const data = await resp.json();
+        return data.fires || [];
+      }
+    } catch (err) {
+      console.warn('API getActiveFires offline:', err);
+    }
+    return [];
+  }
+
+  async triggerTick(mode = null) {
+    try {
+      const url = mode ? `${this.baseUrl}/api/v1/stream/tick?mode=${encodeURIComponent(mode)}` : `${this.baseUrl}/api/v1/stream/tick`;
+      const resp = await fetch(url, { method: 'POST' });
+      if (resp.ok) return await resp.json();
+    } catch (err) {
+      console.error('Failed to trigger tick:', err);
+    }
+    return null;
+  }
+
+  async setStreamMode(mode) {
+    try {
+      const resp = await fetch(`${this.baseUrl}/api/v1/stream/mode`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ mode })
+      });
+      if (resp.ok) return await resp.json();
+    } catch (err) {
+      console.error('Failed to set stream mode:', err);
+    }
+    return null;
+  }
+
+  async getStreamStatus() {
+    try {
+      const resp = await fetch(`${this.baseUrl}/api/v1/stream/status`);
+      if (resp.ok) return await resp.json();
+    } catch (err) {
+      console.warn('Failed to get stream status:', err);
+    }
+    return null;
+  }
+
+  // =========================================================================
+  // EPA PUNJAB LIVE AQMS METHODS
+  // =========================================================================
+
+  async getEPALatest(forceRefresh = false) {
+    try {
+      const params = new URLSearchParams();
+      if (forceRefresh) params.append('force_refresh', 'true');
+      const resp = await fetch(`${this.baseUrl}/api/v1/epa/latest?${params}`);
+      if (resp.ok) return await resp.json();
+    } catch (err) {
+      console.warn('Failed to fetch EPA latest telemetry:', err);
+    }
+    return null;
+  }
+
+  async getEPADaily(stationId = null) {
+    try {
+      const params = new URLSearchParams();
+      if (stationId) params.append('station_id', stationId);
+      const resp = await fetch(`${this.baseUrl}/api/v1/epa/daily?${params}`);
+      if (resp.ok) return await resp.json();
+    } catch (err) {
+      console.warn('Failed to fetch EPA daily series:', err);
+    }
+    return null;
+  }
+
+  async getEPAPeriodic(stationId, startDatetime, endDatetime, interval = '60') {
+    try {
+      const params = new URLSearchParams({
+        station_id: stationId,
+        start_datetime: startDatetime,
+        end_datetime: endDatetime,
+        interval: String(interval),
+      });
+      const resp = await fetch(`${this.baseUrl}/api/v1/epa/periodic?${params}`);
+      if (resp.ok) return await resp.json();
+    } catch (err) {
+      console.warn('Failed to fetch EPA periodic data:', err);
+    }
+    return null;
+  }
+
+  async getEPAAlerts(limit = 100, code = null) {
+    try {
+      const params = new URLSearchParams({ limit: String(limit) });
+      if (code) params.append('code', code);
+      const resp = await fetch(`${this.baseUrl}/api/v1/epa/alerts?${params}`);
+      if (resp.ok) return await resp.json();
+    } catch (err) {
+      console.warn('Failed to fetch EPA operational alerts:', err);
+    }
+    return null;
+  }
+
+  async getEPAStations() {
+    try {
+      const resp = await fetch(`${this.baseUrl}/api/v1/epa/stations`);
+      if (resp.ok) return await resp.json();
+    } catch (err) {
+      console.warn('Failed to fetch EPA stations list:', err);
+    }
+    return null;
+  }
+
+  async getEPAStatus() {
+    try {
+      const resp = await fetch(`${this.baseUrl}/api/v1/epa/status`);
+      if (resp.ok) return await resp.json();
+    } catch (err) {
+      console.warn('Failed to check EPA API health:', err);
+    }
+    return null;
+  }
+
   // =========================================================================
   // SSE LIVE STREAMING WITH 45S WATCHDOG & JITTERED RECONNECTION
   // =========================================================================

@@ -1,26 +1,32 @@
-# Task Assignment: Milestone M1 Forensic Integrity Auditor
+## 2026-11-11T13:41:43Z
+You are the Forensic Integrity Auditor for Milestone 1 (Foundation, Tooling & Design Tokens) of the EPA Punjab Air Quality Workstation.
+Working directory: c:\Users\Asif\Downloads\Punjab Air Quality
+State folder: c:\Users\Asif\Downloads\Punjab Air Quality\.agents\teamwork\auditor_m1_1
 
-You are `auditor_m1_1` (Type: `teamwork_auditor`).
-Working directory: `c:\Users\Asif\Downloads\Punjab Air Quality\.agents\teamwork\auditor_m1_1\`
+MANDATORY READING:
+- c:\Users\Asif\Downloads\Punjab Air Quality\.agents\teamwork\ORIGINAL_REQUEST.md
+- c:\Users\Asif\Downloads\Punjab Air Quality\PROJECT.md
+- c:\Users\Asif\Downloads\Punjab Air Quality\.agents\teamwork\sub_orch_m1\SCOPE.md
+- c:\Users\Asif\Downloads\Punjab Air Quality\.agents\teamwork\worker_m1\handoff.md
 
-## Authoritative Specifications
-Read:
-- `c:\Users\Asif\Downloads\Punjab Air Quality\.agents\teamwork\ORIGINAL_REQUEST.md`
-- `c:\Users\Asif\Downloads\Punjab Air Quality\.agents\teamwork\orchestrator\PROJECT.md`
-- `c:\Users\Asif\Downloads\Punjab Air Quality\.agents\teamwork\worker_m1_archival\handoff.md`
-
-## Objectives
-1. Perform forensic integrity checks on Milestone M1:
-   - Check for hardcoded test results, facade implementations, or circumvented requirements.
-   - Verify that `original System/index.html` was genuinely moved rather than dummy files created.
-   - Verify that `scripts/extract_baseline.py` actually parses `original System/index.html` and genuinely writes valid JSON data.
-   - Run tests independently (`python -m pytest tests/unit/test_archival_and_baseline.py`) and inspect the test implementation to ensure assertions are genuine and non-tautological.
-2. Deliver your definitive binary audit verdict (CLEAN or INTEGRITY VIOLATION) in `handoff.md` with full forensic evidence.
-3. Notify the orchestrator when complete.
-
-## 2026-11-10T13:04:00Z
-You are auditor_m1_1.
-Working directory: c:\Users\Asif\Downloads\Punjab Air Quality\.agents\teamwork\auditor_m1_1\
-Read c:\Users\Asif\Downloads\Punjab Air Quality\.agents\teamwork\auditor_m1_1\DISPATCH.md, c:\Users\Asif\Downloads\Punjab Air Quality\.agents\teamwork\ORIGINAL_REQUEST.md, c:\Users\Asif\Downloads\Punjab Air Quality\.agents\teamwork\orchestrator\PROJECT.md, and c:\Users\Asif\Downloads\Punjab Air Quality\.agents\teamwork\worker_m1_archival\handoff.md.
-
-Perform a forensic integrity audit on Milestone M1. Verify genuine implementation, no dummy facades, no hardcoded cheating, genuine file moves, and independently run tests. Deliver your binary audit verdict (CLEAN or INTEGRITY VIOLATION) in handoff.md and notify the orchestrator.
+Forensic Audit Instructions:
+Execute comprehensive forensic checks to verify authenticity and detect any cheating, hardcoded facades, dummy stubs, or test circumventions:
+1. Static Analysis:
+   - Inspect all implemented files (package.json, tsconfig.json, vite.config.ts, index.html, src/types/deckgl.d.ts, src/styles/tokens.css, src/styles/typography.css, src/styles/grid.module.css, src/App.tsx, src/main.tsx, src/domain/types/index.ts).
+   - Check for hardcoded mock returns, fake contrast bypasses, dummy test fixtures, or bypassed type checking.
+   - Verify that src/frontend/static was not deleted or tampered with to break backend tests.
+2. Dependency Forensics:
+   - Verify that NO banned dependencies (tailwindcss, lucide-react, heroicons, feather-icons) exist anywhere in package.json, package-lock.json, or node_modules/.
+   - Verify that no emoji characters exist in source code, HTML, CSS, or configurations.
+3. Contrast & Standards Forensics:
+   - Verify that design tokens in src/styles/tokens.css actually calculate to >= 7.0:1 contrast and are not artificially declared.
+   - Verify that 100vw x 100vh CSS Grid in src/styles/grid.module.css implements authentic CSS grid styling with the 5 zones.
+4. Execution Validation:
+   - Run npm run typecheck and npm run build independently to confirm the build succeeds with genuine outputs in dist/.
+   - Run python tests/e2e/run_all_tests.py to confirm 50/50 backend tests pass without modification.
+5. Verdict Determination:
+   - Verdict MUST be either CLEAN or INTEGRITY VIOLATION.
+   - If ANY cheating, hardcoding, facade implementation, or violation is found, report INTEGRITY VIOLATION with full forensic evidence.
+6. Write your full audit report to:
+   c:\Users\Asif\Downloads\Punjab Air Quality\.agents\teamwork\auditor_m1_1\handoff.md
+7. Notify the orchestrator with send_message with your verdict.

@@ -1,5 +1,5 @@
 {
-  "timestamp": "2026-11-11T10:59:38.108242+00:00",
+  "timestamp": "2026-11-13T11:07:06.614439+00:00",
   "status": "PASSED",
   "environment": {
     "os": "Windows",
@@ -11,7 +11,7 @@
     "total_tests": 50,
     "passed": 50,
     "failed": 0,
-    "duration_seconds": 1.955
+    "duration_seconds": 2.173
   },
   "tiers": [
     {
@@ -20,7 +20,7 @@
       "filename": "test_tier1_feature_coverage.py",
       "description": "Happy-path isolation tests for pure transforms, schemas, and API contracts",
       "status": "PASSED",
-      "duration_seconds": 0.536,
+      "duration_seconds": 0.544,
       "total": 13,
       "passed": 13,
       "failed": 0,
@@ -86,7 +86,7 @@
       "filename": "test_tier2_boundary_corner.py",
       "description": "Extreme values, calm cutoffs, singularity clamping, sensor holds, and physical guards",
       "status": "PASSED",
-      "duration_seconds": 0.453,
+      "duration_seconds": 0.537,
       "total": 11,
       "passed": 11,
       "failed": 0,
@@ -144,7 +144,7 @@
       "filename": "test_tier3_pairwise_combinations.py",
       "description": "Cross-pollutant interactions, wind kinematics, and multi-step pipeline cascades",
       "status": "PASSED",
-      "duration_seconds": 0.461,
+      "duration_seconds": 0.547,
       "total": 21,
       "passed": 21,
       "failed": 0,
@@ -242,7 +242,7 @@
       "filename": "test_tier4_real_world_scenarios.py",
       "description": "Severe smog episode, offline fallback, user CSV upload, border plume, and multi-station",
       "status": "PASSED",
-      "duration_seconds": 0.505,
+      "duration_seconds": 0.545,
       "total": 5,
       "passed": 5,
       "failed": 0,

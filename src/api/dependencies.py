@@ -30,11 +30,29 @@ def get_district_repository(request: Request) -> DistrictRepository:
 
 
 def get_observation_repository(request: Request) -> ObservationRepository:
-    return request.app.state.repo
+    repo = request.app.state.repo
+    return getattr(repo, "observations", repo)
 
 
 def get_analytics_repository(request: Request) -> AnalyticsRepository:
-    return request.app.state.repo
+    repo = request.app.state.repo
+    return getattr(repo, "analytics", repo)
+
+
+def get_spatial_engine(request: Request):
+    repo = request.app.state.repo
+    return getattr(repo, "spatial_engine", None)
+
+
+def get_cache_manager(request: Request):
+    repo = request.app.state.repo
+    return getattr(repo, "cache_mgr", None)
+
+
+def get_continuous_rollup_service(request: Request):
+    repo = request.app.state.repo
+    return getattr(repo, "continuous_rollups", None)
+
 
 
 def get_observation_service(request: Request) -> ObservationService:

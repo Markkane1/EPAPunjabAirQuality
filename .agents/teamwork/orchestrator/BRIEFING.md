@@ -1,94 +1,73 @@
-# BRIEFING — 2026-11-11T06:06:00Z
+# BRIEFING — 2026-11-11T13:58:30Z
 
 ## Mission
-Build the full end-to-end Punjab Air Quality monitoring, processing, and visualization system according to specifications in docs/ using clean architecture, /impeccable, /taste-skill, and automated verification.
+Orchestrate the end-to-end frontend implementation for the EPA Punjab Air Quality Monitoring, Processing, and Visualization System.
 
 ## 🔒 My Identity
 - Archetype: orchestrator
 - Roles: orchestrator, user_liaison, human_reporter, successor
-- Working directory: c:\Users\Asif\Downloads\Punjab Air Quality\.agents\teamwork\orchestrator
-- Original parent: parent
-- Original parent conversation ID: 4977d705-9f46-4c84-8c5f-674264a0277c
+- Working directory: c:\Users\Asif\Downloads\Punjab Air Quality
+- State folder: c:\Users\Asif\Downloads\Punjab Air Quality\.agents\teamwork\orchestrator
+- Original parent: top-level
+- Original parent conversation ID: 02fd23f9-6113-4a26-867a-654dece092e2
 
 ## 🔒 My Workflow
-- **Pattern**: Project Pattern
-- **Scope document**: c:\Users\Asif\Downloads\Punjab Air Quality\.agents\teamwork\orchestrator\PROJECT.md
-1. **Decompose**: Decompose Punjab Air Quality system into sequential/parallel milestones across archival, pipeline/ingestion, scientific transformation, backend/services, UI dashboard, and testing.
-2. **Dispatch & Execute**: Direct/Delegate per milestone.
-3. **On failure**: Retry -> Replace -> Skip -> Redistribute -> Redesign -> Escalate.
-4. **Succession**: At 16 spawns, write handoff.md, spawn successor.
+- **Pattern**: Project
+- **Scope document**: c:\Users\Asif\Downloads\Punjab Air Quality\PROJECT.md
+1. **Decompose**: Survey authoritative specs and repo, construct PROJECT.md and TEST_INFRA.md, decompose into milestone tracks.
+2. **Dispatch & Execute**: Delegate to subagents (Sub-orchestrators, Explorers, Workers, Reviewers, Challengers, Auditors).
+3. **On failure**: Retry -> Replace -> Skip -> Redistribute -> Redesign.
+4. **Succession**: Threshold 16 spawns.
 - **Work items**:
-  1. Survey phase [done]
-  2. Project specification & decomposition (PROJECT.md) [done]
-  3. M1 Workspace Archival & Baseline Extraction [done]
-  4. Parallel E2E Testing Track [done - TEST_READY.md published]
-  5. M2 Scientific Transformation Engine [done - Gate PASSED, 286/286 passing]
-  6. M3 Data Pipelines & CSV Ingestion Engine [done - Gate PASSED, 376/376 passing]
-  7. M4 Core Backend Services & API Gateway [done - Gate PASSED, 478/478 passing]
-  8. M5 Component-Driven UI/UX Dashboard [done - Gate PASSED, 547/547 passing]
-  9. M6 Final E2E Integration, Tier 5 Adversarial Hardening & Forensic Audit Certification [done - Gate PASSED, 641/641 passing]
-  10. M7 UI/UX & Map Controls Overhaul (F42-F46) [in-progress]
-- **Current phase**: 2B Iteration Loop (Milestone M7)
-- **Current focus**: Exploration of canvas clipping, interactive map controls, responsive grid breakdown, and UI/UX craftsmanship elevation.
+  1. Survey & Requirements Enumeration [done]
+  2. PROJECT.md & Architecture Mapping [done]
+  3. Milestone 1: Foundation, Tooling & Design Tokens [done]
+  4. Milestone 2: Domain Physics & Normalizer Engine [in-progress]
+  5. Milestone 3: 2D Planimetric Canvas & 5-Layer Deck.gl Stack [pending]
+  6. Milestone 4: Telemetry, Controls, Inspector & Scrubber [pending]
+  7. Milestone 5: Ingestion, SSE, Serving Integration & Final E2E Pass [pending]
+- **Current phase**: 2A (Milestone Execution)
+- **Current focus**: Milestone 2 Sub-Orchestrator execution
 
 ## 🔒 Key Constraints
-- NEVER write, modify, or create source code files directly.
-- NEVER run build/test commands yourself — require workers to do so.
-- NEVER investigate or explore the problem at the code level — dispatch Explorers for technical investigation.
-- Use file-editing tools ONLY for metadata/state files (.md) in .agents/teamwork/.
-- Never reuse a subagent after it has delivered its handoff — always spawn fresh.
-- Always include path to ORIGINAL_REQUEST.md in subagent dispatches.
-- MANDATORY UI & TYPOGRAPHY OVERRIDE:
-  * BANNED: Inter, Geist, Arial, Roboto, system defaults. No italicized serif headline clichés.
-  * FONTS: Plus Jakarta Sans (Headings, -0.025em tracking) + DM Sans (Body/UI, 15-16px, 1.6 line-height) + JetBrains Mono (strictly for telemetry values, station IDs, tabular numbers only).
-  * TABULAR NUMERALS: `font-variant-numeric: tabular-nums` on all metrics, timestamps, percentages, and table columns.
-  * ZERO MIDDLE-DOTS: Never use ` • ` or ` · ` separator chains.
-  * STOP CARD SOUP: No nested cards. Unify 4-card KPI row into a single summary strip with 1px vertical dividers.
-  * FLAT HIERARCHY: Slate ground (#09090B), crisp 1px hairlines (rgba(255,255,255,0.08)), zero drop shadows, zero ambient glow/blobs.
-  * CHARTS & TABLES: Muted status badges, subtle gridlines, left-aligned text, right-aligned numbers with tabular nums, 40-44px rows.
+- Dispatch-only: NEVER write, modify, or create source code files directly.
+- NEVER run build/test commands directly.
+- Audit is a binary veto: Any integrity violation means unconditional failure.
+- Never reuse a subagent after it has delivered its handoff.
+- Pass ORIGINAL_REQUEST.md path to every subagent.
 
 ## Current Parent
-- Conversation ID: 4977d705-9f46-4c84-8c5f-674264a0277c
-- Updated: 2026-11-11T10:29:00Z
+- Conversation ID: 02fd23f9-6113-4a26-867a-654dece092e2
+- Updated: not yet
 
 ## Key Decisions Made
-- Milestone M1 Archival & Baseline Extraction certified PASS.
-- E2E Test Suite published with 50/50 tests passing across Tiers 1-4.
-- Milestone M2 Scientific Transformation Engine certified PASS (286/286 tests passing).
-- Milestone M3 Data Pipelines & CSV Ingestion Engine certified PASS (376/376 tests passing).
-- Milestone M4 Core Backend Services & API Gateway certified PASS (478/478 tests passing across unit, integration, and E2E suites).
-- Milestone M5 Component-Driven UI/UX Dashboard certified PASS (547/547 tests passing; UI quarantine table & SSE jitter watchdog verified).
-- Milestone M6 Final E2E Integration, Tier 5 Adversarial Hardening & Forensic Audit certified PASS (641/641 tests passing; Reviewers 1 & 2 APPROVE; Forensic Auditor verdict CLEAN).
-- Full Punjab Air Quality Monitoring, Processing, and Visualization System certified 100% complete.
-
-## Succession Status
-- Succession required: no
-- Spawn count: 7 / 16
-- Pending subagents: c8c48f40-bd22-4d1d-8b4f-6a90289c68bf, 3005d70f-0f5e-4aa6-bb76-f8891a28ccf6, b6ef3682-d0c5-4a82-b306-1de7d99a9c7e
-- Predecessor: gen3 (16 spawns)
-- Generation: gen4
-- Successor: none
-
-## Active Timers
-- Heartbeat cron: 54af003e-ff4b-41db-8b3f-1aaeff591027/task-30 (every 10 min)
-- Safety timer: none
+- Milestone 1 successfully passed gate verification with clean audit.
+- Dispatched Sub-Orchestrator for Milestone 2: Domain Physics, Normalizer & Schema Trap Engine.
 
 ## Team Roster
 | Agent | Type | Work Item | Status | Conv ID |
 |-------|------|-----------|--------|---------|
-| worker_m6_integration | teamwork_worker | Milestone M6 Integration Worker (Phase 1 E2E Integration) | completed (PASS) | cca6c32e-1514-4c3a-8efe-b905e355b978 |
-| challenger_m6_tier5_1 | teamwork_challenger | Milestone M6 Challenger 1 (Domain & Pipeline Tier 5 Hardening) | completed (CONFIRM) | 1e3b63fe-d9b5-4152-b070-919954bc9b59 |
-| challenger_m6_tier5_2_respawn | teamwork_challenger | Milestone M6 Challenger 2 Respawn (API Gateway Tier 5 Hardening) | completed (CONFIRM) | f1dfa1ad-1e2b-4ee8-a398-ed9584b3f5a4 |
-| reviewer_m6_1 | teamwork_reviewer | Milestone M6 Reviewer 1 (Full System Review) | completed (APPROVE) | e117cdbd-787d-4ab3-a620-90fd9faf31bd |
-| reviewer_m6_2 | teamwork_reviewer | Milestone M6 Reviewer 2 (Operational Resilience & Boundaries) | completed (APPROVE) | 27204b19-12bf-45ee-8f75-dafbf6e8532b |
-| auditor_m6_final | teamwork_auditor | Milestone M6 Final Forensic Auditor (Full Codebase Integrity) | completed (CLEAN) | 152a6e0d-3438-4852-bdeb-9e6a4f4aa5b0 |
-| explorer_m7_1 | teamwork_explorer | Canvas projection & map controls investigation | in-progress | c8c48f40-bd22-4d1d-8b4f-6a90289c68bf |
-| explorer_m7_2 | teamwork_explorer | Responsive CSS grid & dead space elimination | in-progress | 3005d70f-0f5e-4aa6-bb76-f8891a28ccf6 |
-| explorer_m7_3 | teamwork_explorer | UI/UX craftsmanship & anti-slop elevation | in-progress | b6ef3682-d0c5-4a82-b306-1de7d99a9c7e |
+| spec_miner_survey_1 | teamwork_spec_miner | Spec & Requirements Mining | completed | 7728ea64-d478-4b14-b6cf-b18fb609a717 |
+| explorer_survey_2 | teamwork_explorer | Frontend Codebase & Tooling | completed | b34e7b13-1149-48a4-be24-39815ed97a9f |
+| explorer_survey_3 | teamwork_explorer | Backend Data & Test Suite | completed | 3619d9fa-012a-4460-b833-cc62cd656c41 |
+| sub_orch_m1 | self | Milestone 1 Sub-Orchestrator | completed | cebe071d-16d8-4717-b773-2e10bfc545fa |
+| sub_orch_m2 | self | Milestone 2 Sub-Orchestrator | in-progress | 67ce931e-e2b3-4aba-ae9e-6d61493eb56a |
+
+## Succession Status
+- Succession required: no
+- Spawn count: 5 / 16
+- Pending subagents: 67ce931e-e2b3-4aba-ae9e-6d61493eb56a
+- Predecessor: none
+- Successor spawned: not yet spawned
+- Successor generation: none
+- Successor state folder: none
+
+## Active Timers
+- Heartbeat cron: 854942e9-be47-4067-87d5-db3fbea7749d/task-247
+- Safety timer: 854942e9-be47-4067-87d5-db3fbea7749d/task-249
 
 ## Artifact Index
-- c:\Users\Asif\Downloads\Punjab Air Quality\.agents\teamwork\ORIGINAL_REQUEST.md — Original User Request
-- c:\Users\Asif\Downloads\Punjab Air Quality\.agents\teamwork\orchestrator\PROJECT.md — Global Project Specification & Feature Inventory
-- c:\Users\Asif\Downloads\Punjab Air Quality\.agents\teamwork\orchestrator\GATE_STATUS.md — Gate Verdict Matrix
-- c:\Users\Asif\Downloads\Punjab Air Quality\.agents\teamwork\orchestrator\handoff.md — Soft Handoff Report for Successor
-- c:\Users\Asif\Downloads\Punjab Air Quality\TEST_READY.md — E2E Test Suite Readiness Declaration
+- c:\Users\Asif\Downloads\Punjab Air Quality\.agents\teamwork\ORIGINAL_REQUEST.md — Authoritative request record
+- c:\Users\Asif\Downloads\Punjab Air Quality\PROJECT.md — Global architecture & feature inventory
+- c:\Users\Asif\Downloads\Punjab Air Quality\TEST_READY.md — Certified E2E test suite manifest
+- c:\Users\Asif\Downloads\Punjab Air Quality\.agents\teamwork\sub_orch_m1\handoff.md — Milestone 1 Completion Report

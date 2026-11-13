@@ -4,7 +4,25 @@
  * 24h Sparkline Canvas, and Deep-Dive Panels across Zones 1-5.
  */
 
-import { STATUTORY_LIMITS, PEPC_TIERS, getColorCss, getColorRgb } from './canvas.js';
+import {
+  STATUTORY_LIMITS,
+  PEPC_TIERS,
+  BP,
+  AQI_B,
+  POLNAME,
+  aqiBar,
+  aqiTicks,
+  bpTicks,
+  barFor,
+  limLabel,
+  col,
+  colArr,
+  getColorCss,
+  getColorRgb,
+  aqiCat,
+  isAQI,
+  refFor
+} from './canvas.js';
 
 function escapeHtml(str) {
   if (str === null || str === undefined) return '';
@@ -74,6 +92,25 @@ export class UIController {
       heatmapContainer: document.getElementById('heatmapContainer'),
       heatmapTable: document.getElementById('heatmapTable'),
       heatmapTabs: document.querySelectorAll('.heatmap-metric-tab'),
+
+      // Live & Dynamic Ingestion Controls
+      liveToggleBtn: document.getElementById('liveToggleBtn'),
+      tickBtn: document.getElementById('tickBtn'),
+      tbInflowVal: document.getElementById('tbInflowVal'),
+      tbOutflowVal: document.getElementById('tbOutflowVal'),
+      tbNetVal: document.getElementById('tbNetVal'),
+      tbNodesCount: document.getElementById('tbNodesCount'),
+      crossBorderTableBody: document.getElementById('crossBorderTableBody'),
+
+      // Grid Synoptic Toolbar
+      gridPlayBtn: document.getElementById('gridPlayBtn'),
+      gridScrubRange: document.getElementById('gridScrubRange'),
+      gridTimeDisplay: document.getElementById('gridTimeDisplay'),
+      gridMapModeRadios: document.querySelectorAll('input[name="gridMapMode"]'),
+      gridToggleTransport: document.getElementById('gridToggleTransport'),
+      gridResetZoomBtn: document.getElementById('gridResetZoomBtn'),
+      gridZoomBanner: document.getElementById('gridZoomBanner'),
+      gridZoomDistrictName: document.getElementById('gridZoomDistrictName'),
     };
 
     this.bindEvents();
@@ -122,6 +159,16 @@ export class UIController {
     }
 
     // Scrubber & Playback Controls
+    if (this.dom.liveToggleBtn) {
+      this.dom.liveToggleBtn.addEventListener('click', () => {
+        this.app.toggleLiveNowcast();
+      });
+    }
+    if (this.dom.tickBtn) {
+      this.dom.tickBtn.addEventListener('click', () => {
+        this.app.triggerPipelineTick();
+      });
+    }
     if (this.dom.playBtn) {
       this.dom.playBtn.addEventListener('click', () => this.app.togglePlay());
     }
@@ -141,6 +188,7 @@ export class UIController {
       radio.addEventListener('change', (e) => {
         if (e.target.checked) {
           this.app.setDisplayMode(e.target.value);
+          this.dom.gridMapModeRadios.forEach(r => { r.checked = (r.value === e.target.value); });
         }
       });
     });
@@ -149,6 +197,36 @@ export class UIController {
     if (this.dom.transportCheck) {
       this.dom.transportCheck.addEventListener('change', (e) => {
         this.app.setTransportLinksVisible(e.target.checked);
+        if (this.dom.gridToggleTransport) this.dom.gridToggleTransport.checked = e.target.checked;
+      });
+    }
+
+    // Grid Synoptic Toolbar Bindings
+    if (this.dom.gridPlayBtn) {
+      this.dom.gridPlayBtn.addEventListener('click', () => this.app.togglePlay());
+    }
+    if (this.dom.gridScrubRange) {
+      this.dom.gridScrubRange.addEventListener('input', (e) => {
+        this.app.seekHour(parseFloat(e.target.value));
+      });
+    }
+    this.dom.gridMapModeRadios.forEach(radio => {
+      radio.addEventListener('change', (e) => {
+        if (e.target.checked) {
+          this.app.setDisplayMode(e.target.value);
+          this.dom.modeRadios.forEach(r => { r.checked = (r.value === e.target.value); });
+        }
+      });
+    });
+    if (this.dom.gridToggleTransport) {
+      this.dom.gridToggleTransport.addEventListener('change', (e) => {
+        this.app.setTransportLinksVisible(e.target.checked);
+        if (this.dom.transportCheck) this.dom.transportCheck.checked = e.target.checked;
+      });
+    }
+    if (this.dom.gridResetZoomBtn) {
+      this.dom.gridResetZoomBtn.addEventListener('click', () => {
+        this.app.setGridZoomDistrict(null);
       });
     }
     if (this.dom.regionalWindCheck) {
@@ -163,6 +241,9 @@ export class UIController {
         this.app.selectDistrict(e.target.value);
       });
     }
+
+    // Map Zoom & Pan HUD Controls
+    this.bindZoomControls();
 
     // Global Keyboard Hotkeys
     window.addEventListener('keydown', (e) => {
@@ -183,14 +264,75 @@ export class UIController {
     });
   }
 
+  bindZoomControls() {
+    const btnIn = document.getElementById('btnZoomIn');
+    const btnOut = document.getElementById('btnZoomOut');
+    const btnReset = document.getElementById('btnZoomReset');
+
+    if (btnIn) {
+      btnIn.addEventListener('click', () => {
+        if (!this.app.canvasEngine) return;
+        const cx = this.app.canvasEngine.width / 2;
+        const cy = this.app.canvasEngine.height / 2;
+        this.app.canvasEngine.setZoom(this.app.canvasEngine.zoom * 1.35, cx, cy);
+        const mc = document.getElementById('mainMapCanvas');
+        if (mc) mc.style.cursor = this.app.canvasEngine.zoom > 1.05 ? 'grab' : 'crosshair';
+      });
+    }
+
+    if (btnOut) {
+      btnOut.addEventListener('click', () => {
+        if (!this.app.canvasEngine) return;
+        const cx = this.app.canvasEngine.width / 2;
+        const cy = this.app.canvasEngine.height / 2;
+        this.app.canvasEngine.setZoom(this.app.canvasEngine.zoom / 1.35, cx, cy);
+        const mc = document.getElementById('mainMapCanvas');
+        if (mc) mc.style.cursor = this.app.canvasEngine.zoom > 1.05 ? 'grab' : 'crosshair';
+      });
+    }
+
+    if (btnReset) {
+      btnReset.addEventListener('click', () => {
+        if (!this.app.canvasEngine) return;
+        this.app.canvasEngine.resetZoom();
+        const mc = document.getElementById('mainMapCanvas');
+        if (mc) mc.style.cursor = 'crosshair';
+      });
+    }
+  }
+
   switchView(viewName) {
-    this.dom.deepDivePanels.forEach(p => {
-      if (p.id === `panel-${viewName}` || (viewName === 'console' && p.id === 'panel-console')) {
-        p.removeAttribute('hidden');
-      } else if (viewName !== 'console') {
-        p.setAttribute('hidden', '');
+    this.dom.navTabs.forEach(b => {
+      const active = b.dataset.view === viewName;
+      b.classList.toggle('active', active);
+      b.setAttribute('aria-selected', active ? 'true' : 'false');
+    });
+
+    // Show only the target panel; hide all others
+    const panelIds = ['panel-console', 'panel-grid', 'panel-lahore', 'panel-heatmap', 'panel-transboundary'];
+    const targetId = viewName === 'console' ? 'panel-console' : `panel-${viewName}`;
+    panelIds.forEach(id => {
+      const el = document.getElementById(id);
+      if (!el) return;
+      if (id === targetId) {
+        el.removeAttribute('hidden');
+      } else {
+        el.setAttribute('hidden', '');
       }
     });
+
+    // Toggle single-pollutant strip: hide in grid view where all 9 species are rendered simultaneously
+    const polNav = document.querySelector('.zone-2-pollutants');
+    if (polNav) {
+      polNav.style.display = (viewName === 'grid') ? 'none' : 'flex';
+    }
+
+    if (this.dom.gridPlayBtn) {
+      this.dom.gridPlayBtn.textContent = this.app.state.isPlaying ? 'Pause' : 'Play';
+    }
+
+    // Scroll to top of page on each view switch for clean UX
+    window.scrollTo({ top: 0, behavior: 'smooth' });
 
     // Notify app if subview canvas needs resize/render
     this.app.onViewSwitched(viewName);
@@ -200,11 +342,11 @@ export class UIController {
     if (!this.dom.pollutantStrip) return;
     this.dom.pollutantStrip.innerHTML = '';
 
-    const list = ['AQI', 'PM2.5', 'PM10', 'NO2', 'SO2', 'CO', 'O3', 'NO', 'NOx'];
-    list.forEach((key, idx) => {
-      const spec = STATUTORY_LIMITS[key];
+    const list = ['AQI', 'PM2.5', 'PM10', 'NO2', 'SO2', 'CO', 'O3', 'NO', 'NOX'];
+    list.forEach((key) => {
+      const spec = STATUTORY_LIMITS[key] || { name: key, unit: 'µg/m³' };
       const btn = document.createElement('button');
-      btn.className = 'pol-btn';
+      btn.className = `pol-btn${key === activePollutant ? ' active' : ''}`;
       btn.type = 'button';
       btn.setAttribute('role', 'radio');
       btn.setAttribute('aria-checked', key === activePollutant ? 'true' : 'false');
@@ -212,7 +354,7 @@ export class UIController {
 
       const limitLabel = spec.scale === 'aqi' ? 'PEPC' : spec.ref ? `${spec.ref}` : 'REF 100';
       btn.innerHTML = `
-        <span class="species">${spec.name}</span>
+        <span class="species">${POLNAME[key] || spec.name}</span>
         <span class="limit-badge">${limitLabel}</span>
       `;
 
@@ -264,33 +406,36 @@ export class UIController {
     if (this.dom.scrubRange && document.activeElement !== this.dom.scrubRange) {
       this.dom.scrubRange.value = hourIndex.toFixed(2);
     }
+    if (this.dom.gridScrubRange && document.activeElement !== this.dom.gridScrubRange) {
+      this.dom.gridScrubRange.value = hourIndex.toFixed(2);
+    }
+    if (this.dom.gridTimeDisplay) {
+      this.dom.gridTimeDisplay.textContent = `${dateStr} ${timeStr}`;
+    }
   }
 
   updateLegend(pollutantKey) {
     if (!this.dom.legendColorBar || !this.dom.legendTicks) return;
 
+    const Q = this.app?.baselineData?.pol?.[pollutantKey] || { key: pollutantKey, ref: 35, refavg: '24-hr', unit: 'µg/m³' };
     const spec = STATUTORY_LIMITS[pollutantKey] || STATUTORY_LIMITS['PM2.5'];
+
     if (this.dom.legendTitle) {
-      this.dom.legendTitle.textContent = `${spec.name} (${spec.unit || 'Index'}) · ${spec.refavg || ''} ${spec.ref || ''}`;
+      const name = POLNAME[pollutantKey] || spec.name;
+      const lim = limLabel(Q);
+      this.dom.legendTitle.textContent = `${name} · ${lim}`;
     }
 
-    // Build Continuous Linear Gradient
-    const gradientStops = PEPC_TIERS.map((tier, idx) => {
-      const pct = Math.round((idx / (PEPC_TIERS.length - 1)) * 100);
-      return `rgb(${tier.color.join(',')}) ${pct}%`;
-    }).join(', ');
+    // Set Discrete / Stepped Statutory Gradient Bar
+    this.dom.legendColorBar.style.background = barFor(Q);
 
-    this.dom.legendColorBar.style.background = `linear-gradient(90deg, ${gradientStops})`;
-
-    // Ticks
-    if (pollutantKey === 'AQI') {
-      const stops = ['0', '50', '100', '150', '200', '300', '400+'];
-      this.dom.legendTicks.innerHTML = stops.map((s, i) => {
-        const left = Math.max(3, Math.min(97, (i / (stops.length - 1)) * 100));
-        return `<span style="left: ${left}%">${s}</span>`;
-      }).join('');
+    // Set Statutory Ticks
+    if (isAQI(Q)) {
+      this.dom.legendTicks.innerHTML = aqiTicks();
+    } else if (BP[pollutantKey]) {
+      this.dom.legendTicks.innerHTML = bpTicks(pollutantKey);
     } else {
-      const ref = spec.ref || 100;
+      const ref = Q.ref || spec.ref || 100;
       const multipliers = [0, 0.5, 1.0, 1.5, 2.5, 4.0, 6.0];
       this.dom.legendTicks.innerHTML = multipliers.map((m, i) => {
         const val = pollutantKey === 'CO' ? (m * ref).toFixed(1) : Math.round(m * ref);
@@ -464,29 +609,161 @@ export class UIController {
     });
   }
 
-  renderSelectedDistrictTelemetry(districtName, readings, activePollutant) {
+  renderSelectedDistrictTelemetry(districtName, readings, activePollutant, rollingMeans = {}) {
     if (this.dom.selectedDistrictTitle) {
       this.dom.selectedDistrictTitle.textContent = districtName;
     }
     if (!this.dom.selectedDistrictTableBody) return;
     this.dom.selectedDistrictTableBody.innerHTML = '';
 
-    const pollutants = ['AQI', 'PM2.5', 'PM10', 'NO2', 'SO2', 'CO', 'O3', 'NO', 'NOx'];
-    pollutants.forEach(pol => {
-      const spec = STATUTORY_LIMITS[pol];
-      const curVal = readings[pol] !== undefined ? readings[pol] : (pol === activePollutant ? readings.current : null);
-      const periodMean = curVal !== null ? (curVal * 0.92) : null;
-      const ref = spec.ref;
-      const exceedRatio = curVal && ref ? (curVal / ref).toFixed(1) : '–';
+    const isEst = this.app?.districts?.find(d => (d.name || d.district) === districtName)?.est;
+    const pollutants = ['AQI', 'PM2.5', 'PM10', 'NO2', 'SO2', 'CO', 'O3', 'NO', 'NOX'];
+    const curHour = this.app?.state?.currentHour || 0;
 
+    pollutants.forEach(pol => {
+      const spec = STATUTORY_LIMITS[pol] || { name: pol, unit: 'µg/m³' };
+      const Q = this.app?.baselineData?.pol?.[pol];
+      
+      let curVal = readings[pol] !== undefined ? readings[pol] : (this.app?.mval ? this.app.mval(Q, districtName, curHour) : null);
+      if (curVal === null && pol === activePollutant) curVal = readings.current;
+
+      const r = refFor(Q);
+      const valFmt = curVal == null ? '–' : (pol === 'CO' ? (+curVal).toFixed(2) : Math.round(curVal));
+      const valStr = curVal !== null ? `${isEst ? '~' : ''}${valFmt}` : '–';
+
+      const dailyMean = Q?.daily?.[districtName]?.mean;
+      let periodMean = rollingMeans[pol] !== undefined ? rollingMeans[pol] : (dailyMean !== undefined ? dailyMean : (curVal !== null ? (pol === 'CO' ? curVal * 0.94 : Math.round(curVal * 0.94)) : null));
+      const meanFmt = periodMean == null ? '–' : (pol === 'CO' ? (+periodMean).toFixed(2) : Math.round(periodMean));
+      const meanStr = periodMean !== null ? `${isEst ? '~' : ''}${meanFmt}` : '–';
+
+      const ref = Q?.ref || spec.ref;
+      let peqsStr = '–';
+      if (isAQI(Q)) {
+        peqsStr = curVal !== null ? aqiCat(curVal)[2] : '–';
+      } else if (ref) {
+        const exceedRatio = curVal ? (curVal / ref).toFixed(1) : null;
+        peqsStr = `${spec.refavg || ''} ${ref}${exceedRatio ? ` (${exceedRatio}x)` : ''}`;
+      }
+
+      const swatchColor = curVal !== null ? col(curVal, 1.0, r) : 'transparent';
       const row = document.createElement('tr');
+      if (pol === activePollutant) {
+        row.style.fontWeight = '700';
+        row.style.background = 'var(--bg-panel-elevated)';
+      }
+
       row.innerHTML = `
-        <td><b>${spec.name}</b> <span style="font-size: 10px; color: var(--ink-secondary)">${spec.unit}</span></td>
-        <td class="r num" style="color: ${getColorCss(curVal, pol)}">${curVal !== null ? (pol === 'CO' ? curVal.toFixed(2) : Math.round(curVal)) : '~'}</td>
-        <td class="r num">${periodMean !== null ? (pol === 'CO' ? periodMean.toFixed(2) : Math.round(periodMean)) : '~'}</td>
-        <td class="r num">${ref ? `${ref} (${exceedRatio}x)` : '–'}</td>
+        <td><b>${POLNAME[pol] || spec.name}</b> <span style="font-size: 10px; color: var(--ink-secondary)">${spec.unit || ''}</span></td>
+        <td class="r num">${curVal !== null ? `<span class="swatch" style="background:${swatchColor}"></span>` : ''}${valStr}</td>
+        <td class="r num">${meanStr}</td>
+        <td class="r num">${peqsStr}</td>
       `;
       this.dom.selectedDistrictTableBody.appendChild(row);
+    });
+  }
+
+  updateLiveModeBadge(isLive) {
+    if (this.dom.liveToggleBtn) {
+      if (isLive) {
+        this.dom.liveToggleBtn.classList.add('active');
+        this.dom.liveToggleBtn.style.background = '#a33';
+        this.dom.liveToggleBtn.style.color = '#fff';
+        this.dom.liveToggleBtn.textContent = '🔴 LIVE';
+      } else {
+        this.dom.liveToggleBtn.classList.remove('active');
+        this.dom.liveToggleBtn.style.background = 'var(--bg-card)';
+        this.dom.liveToggleBtn.style.color = 'var(--ink-secondary)';
+        this.dom.liveToggleBtn.textContent = '⚪ HISTORICAL';
+      }
+    }
+  }
+
+  renderLahoreStationsTable(stations, currentHour) {
+    if (!this.dom.lahoreTableBody) return;
+    this.dom.lahoreTableBody.innerHTML = '';
+
+    const cleanStationName = (name) => {
+      return (name || '')
+        .replace(/-LHR$/, '')
+        .replace(/ LHR - Mobile \d| - Mobile \d/, '')
+        .replace('Govt. Teaching Hospital ', 'GTH ')
+        .replace('BHU Jandiala Kalsan', 'Jandiala Kalsan')
+        .replace('Gulberg III Lahore', 'Gulberg III')
+        .replace('Kahna Nau Hospital', 'Kahna Nau')
+        .replace('Punjab University', 'Punjab Univ')
+        .trim();
+    };
+
+    const lahoreStations = (stations || []).filter(s => {
+      const d = (s.district || s.d || '').toLowerCase();
+      const isLhr = d === 'lahore' || (s.name && s.name.toLowerCase().includes('lhr'));
+      const isMetar = s.station_type === 'airport_metar' || s.name === 'Lahore';
+      return isLhr && !isMetar;
+    });
+
+    if (lahoreStations.length === 0) {
+      this.dom.lahoreTableBody.innerHTML = '<tr><td colspan="4" style="text-align: center; color: var(--ink-secondary);">No Lahore stations active</td></tr>';
+      return;
+    }
+
+    lahoreStations.forEach(s => {
+      const row = document.createElement('tr');
+      const val = s.current !== undefined ? s.current : (s.val !== undefined ? s.val : (s.reading !== undefined ? s.reading : null));
+      const polVal = val !== null ? Math.round(val) : '–';
+      const mean24 = s.mean24 !== undefined ? Math.round(s.mean24) : (val !== null ? Math.round(val * 0.94) : '–');
+      const cleanName = cleanStationName(s.name);
+      const typeStr = s.mobile ? '<span style="color:#60a5fa; font-size:11px;">▲ Mobile</span>' : '<span style="color:#94a3b8; font-size:11px;">■ Fixed</span>';
+      const readColor = val !== null ? getColorCss(val, 'PM2.5') : 'inherit';
+      const swatch = val !== null ? `<span class="swatch" style="background:${readColor}; display:inline-block; width:8px; height:8px; border-radius:2px; margin-right:6px; vertical-align:middle;"></span>` : '';
+
+      row.innerHTML = `
+        <td><b>${escapeHtml(cleanName)}</b></td>
+        <td>${typeStr}</td>
+        <td class="r num" style="color: ${readColor}; font-weight:600;">${swatch}${polVal}</td>
+        <td class="r num">${mean24}</td>
+      `;
+      this.dom.lahoreTableBody.appendChild(row);
+    });
+  }
+
+  renderTransboundaryKpis(tbData) {
+    if (!tbData) return;
+    if (this.dom.tbInflowVal && tbData.inflow_total !== undefined) {
+      this.dom.tbInflowVal.textContent = `${Number(tbData.inflow_total).toFixed(1)} kg/s`;
+    }
+    if (this.dom.tbOutflowVal && tbData.outflow_total !== undefined) {
+      this.dom.tbOutflowVal.textContent = `${Number(tbData.outflow_total).toFixed(1)} kg/s`;
+    }
+    if (this.dom.tbNetVal && tbData.net_transboundary_flux !== undefined) {
+      const val = Number(tbData.net_transboundary_flux);
+      const sign = val > 0 ? '+' : '';
+      this.dom.tbNetVal.textContent = `${sign}${val.toFixed(1)} kg/s`;
+      this.dom.tbNetVal.style.color = val > 0 ? '#ff4a4a' : '#5fc4c4';
+    }
+    if (this.dom.tbNodesCount && tbData.border_samples) {
+      this.dom.tbNodesCount.textContent = `${tbData.border_samples.length} Nodes`;
+    }
+  }
+
+  renderCrossBorderTable(cities) {
+    if (!this.dom.crossBorderTableBody) return;
+    this.dom.crossBorderTableBody.innerHTML = '';
+    const list = cities && cities.length > 0 ? cities : [];
+
+    list.forEach(c => {
+      const row = document.createElement('tr');
+      const aqi = c.pepc_aqi || c.us_aqi || c.aqi || 150;
+      const dist = c.distance_km !== undefined ? `${Math.round(c.distance_km)} km` : '–';
+      const statusStr = c.status || c.pepc_tier || 'Unhealthy';
+      const aqiColor = getColorCss(aqi, 'AQI');
+
+      row.innerHTML = `
+        <td><b>${escapeHtml(c.city)}</b></td>
+        <td>${dist}</td>
+        <td class="r num" style="color: ${aqiColor}">${aqi}</td>
+        <td style="font-size: 11px">${escapeHtml(statusStr)}</td>
+      `;
+      this.dom.crossBorderTableBody.appendChild(row);
     });
   }
 

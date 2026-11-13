@@ -278,3 +278,27 @@ async def test_physical_invariant_aqi_flux_rejected(app):
     api_js = (STATIC_DIR / "js" / "api.js").read_text(encoding="utf-8")
     assert "Physical Invariant Guard" in api_js
     assert "pollutant === 'AQI'" in api_js
+
+
+# -----------------------------------------------------------------------------
+# 7. 3x3 Grid District Zoom & Identification Verification
+# -----------------------------------------------------------------------------
+
+def test_grid_district_zoom_interaction():
+    """Verify that 3x3 multi-pollutant grid includes district zoom, banner, and click logic."""
+    html = (FRONTEND_DIR / "dashboard.html").read_text(encoding="utf-8")
+    assert 'id="gridZoomBanner"' in html
+    assert 'id="gridResetZoomBtn"' in html
+    assert 'id="gridZoomDistrictName"' in html
+
+    app_js = (STATIC_DIR / "js" / "app.js").read_text(encoding="utf-8")
+    assert "computeDistrictBounds" in app_js
+    assert "getGridActiveViewport" in app_js
+    assert "toggleGridDistrictZoom" in app_js
+    assert "hitTestMiniDistrict" in app_js
+    assert "gridZoomDistrict" in app_js
+
+    tokens_css = (STATIC_DIR / "css" / "tokens.css").read_text(encoding="utf-8")
+    assert ".grid-zoom-banner" in tokens_css
+    assert ".grid-reset-zoom-btn" in tokens_css
+

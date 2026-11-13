@@ -85,6 +85,13 @@
             <div id="hudPollutant" class="hud-pollutant-pill">AQI · PEPC Scale</div>
           </div>
 
+          <!-- Floating HUD Zoom Controls (Top-Right) -->
+          <div class="hud-zoom-controls" role="toolbar" aria-label="Map Zoom and Navigation Controls">
+            <button type="button" id="btnZoomIn" class="hud-zoom-btn" title="Zoom In (+)" aria-label="Zoom In">+</button>
+            <button type="button" id="btnZoomOut" class="hud-zoom-btn" title="Zoom Out (−)" aria-label="Zoom Out">−</button>
+            <button type="button" id="btnZoomReset" class="hud-zoom-btn hud-zoom-reset" title="Reset View (100%)" aria-label="Reset View">100%</button>
+          </div>
+
           <!-- Floating Dynamic PEPC Legend (Bottom-Right) -->
           <div class="hud-legend-deck" aria-label="Air Quality Index Legend">
             <div class="legend-header">
@@ -105,7 +112,9 @@
         <!-- 216-Hour Transport Scrubber Deck -->
         <div class="scrubber-deck" role="toolbar" aria-label="Temporal Transport Scrubber Controls">
           <div class="scrubber-playback-group">
+            <button type="button" id="liveToggleBtn" class="live-mode-btn active" aria-label="Toggle Live Nowcast Mode" title="Pin view to real-time live data stream" style="background: #a33; color: #fff; font-weight: 700; padding: 4px 10px; border-radius: 3px; border: 1px solid #e55; cursor: pointer;">🔴 LIVE</button>
             <button type="button" id="playBtn" class="primary" aria-label="Play or Pause Timeline">Pause</button>
+            <button type="button" id="tickBtn" class="tick-step-btn" aria-label="Advance Ingestion Pipeline 1 Hour" title="Trigger pipeline tick simulation" style="background: var(--bg-card); color: var(--accent); border: 1px solid var(--accent); padding: 4px 8px; border-radius: 3px; cursor: pointer;">+1h Tick</button>
             <input type="range" id="scrubRange" class="range-scrubber-input" min="0" max="215" step="0.01" value="0" aria-label="Timeline Transport Scrubber (Hours 0 to 215)">
           </div>
 
@@ -135,7 +144,7 @@
         <!-- Provincial Summary Card -->
         <section class="instrument-card" aria-label="Provincial Airshed Summary">
           <h2>Provincial Summary</h2>
-          <div class="card-hint">Real-time provincial aggregates & 216-hour trend</div>
+          <div class="card-hint">Provincial airshed aggregates & trajectory</div>
           <div class="kpi-metrics-grid">
             <div class="kpi-cell">
               <div id="kpiMeanVal" class="val num">284.5</div>
@@ -156,7 +165,7 @@
         <!-- Airport Weather Matrix Card -->
         <section class="instrument-card" aria-label="Airport Weather Matrix">
           <h2>Airport Weather Matrix</h2>
-          <div class="card-hint">Aviation METAR vector winds, visibility, and temperature</div>
+          <div class="card-hint">Aerodrome METAR vector winds, visibility, and surface temperatures</div>
           <table class="compact-table">
             <thead>
               <tr>
@@ -176,7 +185,7 @@
         <!-- Ranked District Exceedance List -->
         <section class="instrument-card" aria-label="Ranked District Exceedance List">
           <h2>District Concentrations</h2>
-          <div class="card-hint">All 41 districts sorted descending (Click to inspect)</div>
+          <div class="card-hint">Ranked district concentrations vs statutory limits</div>
           <div id="districtRankedList" class="district-ranked-list">
             <!-- Dynamically populated -->
           </div>
@@ -190,7 +199,7 @@
               <!-- Dynamically populated -->
             </select>
           </div>
-          <div class="card-hint">9-Pollutant breakdown vs statutory PEQS standards</div>
+          <div class="card-hint">9-Pollutant telemetry breakdown vs statutory PEQS standards</div>
           <table class="compact-table">
             <thead>
               <tr>
@@ -209,7 +218,7 @@
         <!-- 16-Sector CPF Polar Wind Rose Card -->
         <section class="instrument-card" aria-label="Conditional Probability Function Polar Rose">
           <h2>CPF Wind Rose</h2>
-          <div id="roseMetaText" class="card-hint">Conditional Probability Function (&gt;P75). Dashed ring = 0.25 null baseline.</div>
+          <div id="roseMetaText" class="card-hint">16-Sector Conditional Probability Function (&gt;P75 advective threshold)</div>
           <canvas id="roseCanvas" class="rose-canvas" aria-label="16-Sector CPF Polar Wind Rose Canvas"></canvas>
         </section>
 
@@ -221,18 +230,42 @@
          ==================================================================== -->
 
     <!-- Panel 1: Synchronized 3x3 Multi-Pollutant Grid -->
-    <section id="panel-grid" class="deep-dive-panel instrument-card" hidden aria-label="Synchronized 3x3 Multi-Pollutant Grid">
-      <h2>Synchronized 3x3 Multi-Pollutant Grid</h2>
-      <div class="card-hint">All 9 statutory pollutants rendered simultaneously under synchronized temporal playback</div>
+    <section id="panel-grid" class="deep-dive-panel panel-grid-root" hidden aria-label="Synchronized 3x3 Multi-Pollutant Grid">
+      <div class="grid-panel-header">
+        <div class="grid-panel-title-group">
+          <span class="grid-panel-eyebrow">Synoptic Telemetry Matrix</span>
+          <h2 class="grid-panel-title">Multi-Pollutant Matrix · 9 Monitored Species (3×3 Grid)</h2>
+        </div>
+
+        <div class="grid-transport-toolbar" role="toolbar" aria-label="Synoptic Timeline Controls">
+          <button type="button" id="gridPlayBtn" class="grid-play-btn primary" title="Play or Pause Timeline">Pause</button>
+          <div class="grid-slider-wrap">
+            <input type="range" id="gridScrubRange" class="range-scrubber-input grid-scrubber" min="0" max="215" step="0.01" value="0" aria-label="Timeline Transport Scrubber">
+            <span id="gridTimeDisplay" class="grid-time-readout tabular-nums">Sat 09 Nov 23:00</span>
+          </div>
+          <div class="grid-toggle-group">
+            <label class="grid-toggle-label"><input type="radio" name="gridMapMode" value="surface" checked> Surface</label>
+            <label class="grid-toggle-label"><input type="radio" name="gridMapMode" value="district"> Choropleth</label>
+          </div>
+          <label class="grid-toggle-label grid-flux-toggle">
+            <input type="checkbox" id="gridToggleTransport" checked> Transport Flux
+          </label>
+          <div id="gridZoomBanner" class="grid-zoom-banner" style="display: none;" role="status" aria-label="District Zoom Indicator">
+            <span class="grid-zoom-tag">District: <strong id="gridZoomDistrictName">Lahore</strong></span>
+            <button type="button" id="gridResetZoomBtn" class="grid-reset-zoom-btn" title="Reset to Full Province View">✕ Reset View</button>
+          </div>
+        </div>
+      </div>
       <div id="miniGridContainer" class="multi-pollutant-grid">
         <!-- Rendered dynamically -->
       </div>
+      <div id="minis" style="display:none;"></div>
     </section>
 
     <!-- Panel 2: Lahore Network Focus Drawer -->
     <section id="panel-lahore" class="deep-dive-panel instrument-card" hidden aria-label="Lahore Intra-Urban Network Focus">
-      <h2>Lahore AQMS Network Focus & Wagha Border Inset</h2>
-      <div class="card-hint">High-resolution intra-urban monitoring across 11 EPA fixed & mobile AQMS stations</div>
+      <h2>Lahore AQMS Inset & Wagha Border Perimeter</h2>
+      <div class="card-hint">Intra-urban monitoring across EPA fixed & mobile AQMS stations</div>
       <div class="lahore-focus-layout">
         <canvas id="lahoreMapCanvas" class="lahore-map-canvas" aria-label="Lahore High-Resolution Station Inset Map"></canvas>
         <div style="overflow-x: auto;">
@@ -246,12 +279,7 @@
               </tr>
             </thead>
             <tbody id="lahoreTableBody">
-              <tr><td>Town Hall (EPA HQ)</td><td>Fixed AQMS</td><td class="r num">492</td><td class="r num">468</td></tr>
-              <tr><td>Punjab University</td><td>Fixed AQMS</td><td class="r num">445</td><td class="r num">420</td></tr>
-              <tr><td>Gulberg Industrial</td><td>Fixed AQMS</td><td class="r num">480</td><td class="r num">460</td></tr>
-              <tr><td>Kot Lakhpat</td><td>Fixed AQMS</td><td class="r num">510</td><td class="r num">485</td></tr>
-              <tr><td>Wagha Border Post</td><td>Border Inset</td><td class="r num">540</td><td class="r num">512</td></tr>
-              <tr><td>Ravi Road Van</td><td>Mobile AQMS</td><td class="r num">465</td><td class="r num">440</td></tr>
+              <!-- Dynamically populated from active station observations -->
             </tbody>
           </table>
         </div>
@@ -260,8 +288,8 @@
 
     <!-- Panel 3: Virtualized 41x216 Hourly Heatmap Matrix -->
     <section id="panel-heatmap" class="deep-dive-panel instrument-card" hidden aria-label="Virtualized Hourly Heatmap Matrix">
-      <h2>Virtualized 41 Districts x 216 Hours Matrix</h2>
-      <div class="card-hint">Synoptic spatiotemporal matrix (8,856 cells) across the entire observation period</div>
+      <h2>Spatiotemporal Observation Matrix</h2>
+      <div class="card-hint">District hourly mean concentrations (41 districts × 216 observation hours)</div>
       <div id="heatmapContainer" class="heatmap-container">
         <table id="heatmapTable" class="heatmap-table">
           <!-- Dynamically populated -->
@@ -272,24 +300,24 @@
     <!-- Panel 4: Transboundary Remote Sensing Hub -->
     <section id="panel-transboundary" class="deep-dive-panel instrument-card" hidden aria-label="Transboundary Diagnostics Hub">
       <h2>Transboundary Remote Sensing & Plume Hub</h2>
-      <div class="card-hint">120 km international border belt advection analysis, ECMWF IFS winds, and NASA FIRMS active fires</div>
+      <div class="card-hint">120 km border advection analysis, ECMWF IFS boundary winds, and NASA FIRMS active fire telemetry</div>
       <div class="transboundary-layout">
         <div>
           <div class="sensing-card-grid">
             <div class="kpi-cell">
-              <div class="val num" style="color: #ff6b5e;">482.3 kg/s</div>
+              <div id="tbInflowVal" class="val num" style="color: #ff6b5e;">-- kg/s</div>
               <div class="lbl">Inflow from India</div>
             </div>
             <div class="kpi-cell">
-              <div class="val num" style="color: #5fc4c4;">124.6 kg/s</div>
+              <div id="tbOutflowVal" class="val num" style="color: #5fc4c4;">-- kg/s</div>
               <div class="lbl">Outflow to India</div>
             </div>
             <div class="kpi-cell">
-              <div class="val num" style="color: #ff4a4a;">+357.7 kg/s</div>
+              <div id="tbNetVal" class="val num" style="color: #ff4a4a;">-- kg/s</div>
               <div class="lbl">Net Advective Balance</div>
             </div>
             <div class="kpi-cell">
-              <div class="val num">39 Nodes</div>
+              <div id="tbNodesCount" class="val num">39 Nodes</div>
               <div class="lbl">Border Normal Sensors</div>
             </div>
           </div>
@@ -303,12 +331,8 @@
             <thead>
               <tr><th>City</th><th>Distance to Border</th><th class="r">AQI (US EPA)</th><th>Status</th></tr>
             </thead>
-            <tbody>
-              <tr><td>Amritsar</td><td>28 km</td><td class="r num" style="color: #c94a29;">185</td><td>Unhealthy</td></tr>
-              <tr><td>Firozpur</td><td>12 km</td><td class="r num" style="color: #c94a29;">178</td><td>Unhealthy</td></tr>
-              <tr><td>Jalandhar</td><td>82 km</td><td class="r num" style="color: #7a325d;">240</td><td>Very Unhealthy</td></tr>
-              <tr><td>Ludhiana</td><td>125 km</td><td class="r num" style="color: #7a325d;">265</td><td>Very Unhealthy</td></tr>
-              <tr><td>Delhi NCR</td><td>360 km</td><td class="r num" style="color: #4a154b;">385</td><td>Hazardous</td></tr>
+            <tbody id="crossBorderTableBody">
+              <!-- Dynamically populated from /api/v1/observations/cross-border -->
             </tbody>
           </table>
         </div>

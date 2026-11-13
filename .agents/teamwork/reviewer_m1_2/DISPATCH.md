@@ -1,29 +1,24 @@
-# Task Assignment: Milestone M1 Reviewer 2
+## 2026-11-11T13:41:06Z
+[Message] timestamp=2026-11-11T13:41:06Z sender=cebe071d-16d8-4717-b773-2e10bfc545fa priority=MESSAGE_PRIORITY_HIGH content=You are Reviewer 2 for Milestone 1 (Foundation, Tooling & Design Tokens) of the EPA Punjab Air Quality Workstation.
+Working directory: c:\Users\Asif\Downloads\Punjab Air Quality
+State folder: c:\Users\Asif\Downloads\Punjab Air Quality\.agents\teamwork\reviewer_m1_2
 
-You are `reviewer_m1_2` (Type: `teamwork_reviewer`).
-Working directory: `c:\Users\Asif\Downloads\Punjab Air Quality\.agents\teamwork\reviewer_m1_2\`
+MANDATORY READING:
+- c:\Users\Asif\Downloads\Punjab Air Quality\.agents\teamwork\ORIGINAL_REQUEST.md
+- c:\Users\Asif\Downloads\Punjab Air Quality\PROJECT.md
+- c:\Users\Asif\Downloads\Punjab Air Quality\.agents\teamwork\sub_orch_m1\SCOPE.md
+- c:\Users\Asif\Downloads\Punjab Air Quality\TEST_READY.md
+- c:\Users\Asif\Downloads\Punjab Air Quality\.agents\teamwork\worker_m1\handoff.md
 
-## Authoritative Specifications
-Read:
-- `c:\Users\Asif\Downloads\Punjab Air Quality\.agents\teamwork\ORIGINAL_REQUEST.md`
-- `c:\Users\Asif\Downloads\Punjab Air Quality\.agents\teamwork\orchestrator\PROJECT.md`
-- `c:\Users\Asif\Downloads\Punjab Air Quality\.agents\teamwork\worker_m1_archival\handoff.md`
-
-## Objectives
-1. Independently review Milestone M1 deliverables:
-   - Verify workspace archival (R1) meets all acceptance criteria.
-   - Verify baseline dataset extraction (R2 baseline) accurately reflects 79 stations, 41 districts, 6 airports, and 216 historical hours.
-2. Execute test verification commands:
-   - `python -m pytest tests/unit/test_archival_and_baseline.py`
-   - Verify data loading in Python with JSON parsing sanity checks.
-3. Record findings and structured verdict (APPROVE or REQUEST_CHANGES) in `handoff.md` and message the orchestrator.
-
-## 2026-11-10T13:04:00Z
-Sender: c384b499-9dff-40dc-b63d-721df47da08f
-Priority: MESSAGE_PRIORITY_HIGH
-Content:
-You are reviewer_m1_2.
-Working directory: c:\Users\Asif\Downloads\Punjab Air Quality\.agents\teamwork\reviewer_m1_2\
-Read c:\Users\Asif\Downloads\Punjab Air Quality\.agents\teamwork\reviewer_m1_2\DISPATCH.md, c:\Users\Asif\Downloads\Punjab Air Quality\.agents\teamwork\ORIGINAL_REQUEST.md, c:\Users\Asif\Downloads\Punjab Air Quality\.agents\teamwork\orchestrator\PROJECT.md, and c:\Users\Asif\Downloads\Punjab Air Quality\.agents\teamwork\worker_m1_archival\handoff.md.
-
-Independently review Milestone M1 (workspace archival and baseline extraction). Run builds and unit tests (python -m pytest tests/unit/test_archival_and_baseline.py). Deliver your verdict (APPROVE or REQUEST_CHANGES) in handoff.md and notify the orchestrator.
+Review Objectives:
+1. Specifically review and verify the WCAG 2.1 AAA luminance contrast compliance in `src/styles/tokens.css` (>= 7.0:1 across all surface/text pairs in dark and light modes).
+2. Verify typography rules in `src/styles/typography.css` and `index.html` (IBM Plex Sans, Sans Condensed, Mono, tabular-nums on numbers, zero emojis).
+3. Verify canonical TypeScript contracts in `src/domain/types/index.ts` (District centroid [lon, lat], isEstimated, aerodrome wind null vs calm, Station 172 blacklist, dynamic station counts, physical dimension guard, CPF rose, 39 border nodes).
+4. Run verification commands:
+   - Run `npm run typecheck`
+   - Run `npm run build`
+   - Run `python tests/e2e/run_all_tests.py`
+5. Determine your verdict: APPROVE or REQUEST_CHANGES.
+6. Write your full review report to:
+   c:\Users\Asif\Downloads\Punjab Air Quality\.agents\teamwork\reviewer_m1_2\handoff.md
+7. Notify the orchestrator with send_message with your verdict.

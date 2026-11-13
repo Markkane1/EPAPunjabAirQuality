@@ -1,0 +1,124 @@
+/* ==========================================================================
+   EPA Punjab Air Quality Workstation - Rigid 5-Zone CSS Grid Container
+   Enforces 100vw x 100vh with zero window-level scrollbars and 1px hairlines.
+   ========================================================================== */
+
+.workstation {
+  display: grid;
+  width: 100vw;
+  height: 100vh;
+  margin: 0;
+  padding: 0;
+  overflow: hidden;
+  box-sizing: border-box;
+  background-color: var(--bg-canvas, #0f1716);
+  color: var(--ink-primary, #e3ece9);
+  font-family: var(--font-body, "IBM Plex Sans", -apple-system, sans-serif);
+  
+  /* 3 Rows: Command Bar (52px), Workstation Main (1fr), Temporal Scrubber (68px) */
+  grid-template-rows: 52px 1fr 68px;
+  
+  /* 3 Columns: Spatial Dock (320px), Map Canvas (1fr), Receptor Inspector (380px) */
+  grid-template-columns: 320px 1fr 380px;
+  
+  /* 5 Canonical Grid Areas */
+  grid-template-areas:
+    "command-bar command-bar command-bar"
+    "spatial-dock map-canvas receptor-inspector"
+    "temporal-scrubber temporal-scrubber temporal-scrubber";
+}
+
+/* Zone 1: Top Command Bar */
+.commandBar {
+  grid-area: command-bar;
+  height: 52px;
+  min-height: 52px;
+  max-height: 52px;
+  box-sizing: border-box;
+  border-bottom: var(--border-hairline, 1px solid #2a3a38);
+  background-color: var(--bg-panel, #152120);
+  z-index: 20;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0 var(--space-md, 16px);
+  overflow: hidden;
+}
+
+/* Zone 2: Spatial Control Dock (Left) */
+.spatialDock {
+  grid-area: spatial-dock;
+  box-sizing: border-box;
+  border-right: var(--border-hairline, 1px solid #2a3a38);
+  background-color: var(--bg-dock, #131e1d);
+  z-index: 10;
+  display: flex;
+  flex-direction: column;
+  overflow-y: auto;
+  overflow-x: hidden;
+}
+
+/* Zone 3: Central Planimetric Map Canvas */
+.mapCanvas {
+  grid-area: map-canvas;
+  box-sizing: border-box;
+  position: relative;
+  overflow: hidden;
+  background-color: var(--bg-canvas, #0f1716);
+  z-index: 1;
+}
+
+/* Zone 4: Receptor Inspector (Right) */
+.receptorInspector {
+  grid-area: receptor-inspector;
+  box-sizing: border-box;
+  border-left: var(--border-hairline, 1px solid #2a3a38);
+  background-color: var(--bg-inspector, #152120);
+  z-index: 10;
+  display: flex;
+  flex-direction: column;
+  overflow-y: auto;
+  overflow-x: hidden;
+}
+
+/* Zone 5: Temporal Playback Scrubber (Bottom) */
+.temporalScrubber {
+  grid-area: temporal-scrubber;
+  height: 68px;
+  min-height: 68px;
+  max-height: 68px;
+  box-sizing: border-box;
+  border-top: var(--border-hairline, 1px solid #2a3a38);
+  background-color: var(--bg-panel, #152120);
+  z-index: 20;
+  display: flex;
+  align-items: center;
+  padding: 0 var(--space-md, 16px);
+  overflow: hidden;
+}
+
+/* Panel Header Utility */
+.panelHeader {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  height: 36px;
+  min-height: 36px;
+  padding: 0 var(--space-sm, 8px);
+  border-bottom: var(--border-hairline, 1px solid #2a3a38);
+  background-color: var(--bg-panel-elevated, #1c2b2a);
+  font-family: var(--font-condensed, "IBM Plex Sans Condensed", sans-serif);
+  font-size: 13px;
+  font-weight: 600;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: var(--ink-secondary, #c0cfcb);
+}
+
+/* Panel Content Scroll Container */
+.panelBody {
+  flex: 1 1 auto;
+  padding: var(--space-sm, 8px);
+  overflow-y: auto;
+  overflow-x: hidden;
+}

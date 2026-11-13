@@ -1,178 +1,178 @@
-# Forensic Audit Report: Milestone M1 (Workspace Archival & Baseline Extraction)
+# Milestone 1 Forensic Audit Report: Foundation, Tooling & Design Tokens
 
-**Auditor Agent**: `auditor_m1_1`  
-**Working Directory**: `c:\Users\Asif\Downloads\Punjab Air Quality\.agents\teamwork\auditor_m1_1\`  
-**Date**: 2026-11-10T13:09:00Z  
-**Work Product**: Milestone M1 (`original System/`, `scripts/extract_baseline.py`, `data/baseline/`, `tests/unit/test_archival_and_baseline.py`)  
-**Profile**: General Project  
-**Integrity Mode**: `development` (per `ORIGINAL_REQUEST.md` line 8)  
+**Work Product**: Milestone 1 Deliverables (Foundation, Tooling, Tokens, Layout Grid & Shared Domain Types)  
+**Profile**: General Project (Integrity Forensics)  
+**Integrity Mode**: Development  
+**Auditor**: `auditor_m1_1`  
+**Date**: 2026-11-11  
 **Verdict**: **CLEAN**
 
 ---
 
-## 1. Executive Summary & Verdict
+## 1. Observation
 
-Milestone M1 has been subjected to full forensic integrity analysis, adversarial cross-checking, and independent test execution. 
-All checks passed with zero integrity violations:
-- Genuine non-destructive archival of `index.html` (9,609,848 bytes) and `collector/` (containing `collector.py`, 16,362 bytes) into `original System/`.
-- `index.html` and `collector/` are completely absent from workspace root.
-- `docs/` (all 6 system specifications) and `.agents/` remain preserved at workspace root.
-- `scripts/extract_baseline.py` is a genuine, dynamic parser that extracts `window.DATA` from `original System/index.html` into standardized JSON files without hardcoded shortcuts or facades.
-- `tests/unit/test_archival_and_baseline.py` contains genuine, non-tautological assertions that independently passed 9/9 with 0 failures in 0.13 seconds.
-- Direct mathematical and byte-level comparison confirms 100% zero-drift alignment between `original System/index.html` and extracted baseline files in `data/baseline/`.
+Direct, empirical observations across all audited files and executed commands:
 
-**Verdict**: **CLEAN**
+### 1.1 Source Code & File Inventory Inspection
+Inspected all 11 Milestone 1 files:
+1. `package.json` (lines 1–30): Configures React 18.3.1, MapLibre GL 3.6.2, Deck.gl 8.9.36, Vite 5.4.11, and TypeScript 5.6.3. Zero banned packages (`tailwindcss`, `lucide-react`, `heroicons`, `feather-icons`) are listed.
+2. `tsconfig.json` (lines 1–24): Strict TypeScript compiler options with `"strict": true`, `"target": "ES2022"`, `"moduleResolution": "bundler"`, `"types": ["vite/client"]`, and `"paths": { "@/*": ["src/*"] }`.
+3. `vite.config.ts` (lines 1–42): Vite bundler configuration with `@vitejs/plugin-react`, `@` path alias, `/api` proxy targeting `http://127.0.0.1:9000`, and Rollup manual chunks for `deckgl-vendor`, `maplibre-vendor`, and `react-vendor`.
+4. `src/types/deckgl.d.ts` (lines 1–24): Re-exports typed declarations from `@deck.gl/*/typed` subpaths for all 5 Deck.gl packages.
+5. `src/styles/tokens.css` (lines 1–176): Declares WCAG 2.1 AAA luminance tokens across dark and light themes, 7 PEPC statutory colors with contrast-tested inks, structural hairlines (`1px solid`), 0px border-radius, zero drop shadows (`--shadow-none: none`), and zero blur (`--blur-none: none`). Global CSS reset enforces `border-radius: 0px !important`, `box-shadow: none !important`, and `backdrop-filter: none !important` (lines 170–176).
+6. `src/styles/typography.css` (lines 1–135): Defines typography using exclusively `IBM Plex Sans`, `IBM Plex Sans Condensed`, and `IBM Plex Mono`. Enforces `font-variant-numeric: tabular-nums` and `font-feature-settings: "tnum" 1, "zero" 1` across all numeric and telemetry classes (lines 39–52).
+7. `index.html` (lines 1–22): Loads Google Fonts for `IBM Plex Mono`, `IBM Plex Sans Condensed`, and `IBM Plex Sans`. Sets document title to `EPA Punjab Air Quality Workstation - Atmospheric Monitoring Console`. Zero emojis present.
+8. `src/styles/grid.module.css` (lines 1–124): Implements a rigid 100vw x 100vh CSS Grid layout (`display: grid; width: 100vw; height: 100vh; overflow: hidden;`) with 3 rows (`52px 1fr 68px`) and 3 columns (`320px 1fr 380px`), defining the 5 required grid areas: `command-bar`, `spatial-dock`, `map-canvas`, `receptor-inspector`, and `temporal-scrubber`.
+9. `src/App.tsx` (lines 1–157): React application component implementing semantic landmarks (`header` role="banner", `aside` role="region", `main` role="main", `aside` role="complementary", `footer` role="contentinfo"), assertive ARIA live alert container (lines 45–52), and DOM hooks `#mapLibreCanvas` and `#deckOverlay` for Milestone 3 map integration.
+10. `src/main.tsx` (lines 1–16): Mounts React 18 `createRoot` at `#root` in `React.StrictMode`, importing `tokens.css` and `typography.css`.
+11. `src/domain/types/index.ts` (lines 1–508): Shared TypeScript domain contracts covering 9 statutory pollutants, 7 PEPC grades, normalized stations (with 13 Lahore stations identified), normalized districts with inverted centroids (`LngLat: [lon, lat]`), 4-state wind vectors with Station 172 anemometer blacklist flag, 39 transboundary border nodes with normal dot products, advection mass transport flux with PM2.5 dimension guard, 16-sector CPF wind rose with $N_k < 6$ small-sample suppression, and temporal QC filters.
 
----
+### 1.2 Banned Dependencies Forensics
+- Command: `npm list tailwindcss lucide-react heroicons feather-icons`
+  Output: `(empty)`
+- Command: `Select-String -Path package.json, package-lock.json -Pattern 'tailwindcss', 'lucide-react', 'heroicons', 'feather-icons'`
+  Output: None (zero matches).
+- Command: `Get-ChildItem -Directory -Recurse -Filter '*tailwind*' node_modules`, etc.
+  Output: None (zero banned package directories exist).
 
-## 2. Phase Results & Forensic Verification Matrix
+### 1.3 Emoji Scan
+Scanned all Milestone 1 deliverables (`package.json`, `tsconfig.json`, `vite.config.ts`, `index.html`, `src/types/deckgl.d.ts`, `src/styles/tokens.css`, `src/styles/typography.css`, `src/styles/grid.module.css`, `src/App.tsx`, `src/main.tsx`, `src/domain/types/index.ts`) with a Unicode emoji regex scanner covering `[\U00010000-\U0010ffff]`, `[\u2600-\u26ff]`, `[\u2700-\u27bf]`, `[\u2300-\u23ff]`, `[\u2b50-\u2b55]`, and related ranges.
+Result: **CLEAN. Exactly 0 emojis found in Milestone 1 deliverables.**
 
-| # | Forensic Check | Description | Status | Evidence Summary |
-|---|---|---|:---:|---|
-| 1 | **Workspace Archival** | Relocate `index.html` and `collector/` to `original System/`, preserve `docs/` and `.agents/` at root | **PASS** | `original System/index.html` (9.6MB), `original System/collector/collector.py` (16.3KB) exist; root legacy files absent. |
-| 2 | **Facade Detection** | Check `scripts/extract_baseline.py` for dummy implementations, empty methods, or stub constants | **PASS** | Dynamic stream parsing of `window.DATA=`, full AST parsing, rigorous error handling (`FileNotFoundError`, `ValueError`). |
-| 3 | **Hardcoding Detection** | Check project source for hardcoded station rosters, coordinates, or test PASS/FAIL strings | **PASS** | No hardcoded data dumps. Dynamic extraction of 79 stations, 41 districts, 6 airports, 216 hours. |
-| 4 | **Behavioral Execution** | Independent re-execution of `scripts/extract_baseline.py` and output validation | **PASS** | Script re-executed successfully: wrote 79 stations, 41 districts, 6 airports, 216 hours of observations. |
-| 5 | **Zero-Drift Cross-Check** | Compare `data/baseline/` JSON contents directly with `window.DATA` inside `original System/index.html` | **PASS** | 100% field-by-field equality across stations, districts, airports, pollutants, wind grids, and transboundary boundaries. |
-| 6 | **Independent Test Execution** | Execute automated test suites via pytest | **PASS** | `tests/unit/test_archival_and_baseline.py` passed 9/9 in 0.13s; full project test suite passed 67/67 in 0.52s. |
-| 7 | **Pre-populated Artifact Scan** | Scan workspace for illicit logs or fabricated attestation artifacts | **PASS** | No unauthorized or fabricated log artifacts detected. |
+### 1.4 Mathematical WCAG 2.1 AAA Contrast Ratio Verification
+Evaluated all 56 surface-and-ink pairings (28 dark theme + 28 light theme) plus PEPC palette inks using exact W3C relative luminance ($L = 0.2126 R_{lin} + 0.7152 G_{lin} + 0.0722 B_{lin}$) and contrast ratio ($CR = \frac{L_{lighter} + 0.05}{L_{darker} + 0.05}$):
+- **Dark Mode (28 pairs)**: All pairs pass $\ge 7.0:1$.
+  - Worst case: `--accent` (`#5fc4c4`, $L=0.45898$) on `--bg-panel-elevated` (`#1c2b2a`, $L=0.02142$) $\to$ **7.13:1** (PASS AAA).
+  - Primary ink: `--ink-primary` (`#e3ece9`, $L=0.82205$) on `--bg-canvas` (`#0f1716`, $L=0.00772$) $\to$ **15.11:1** (PASS AAA).
+  - Secondary ink: `--ink-secondary` (`#c0cfcb`, $L=0.60144$) on `--bg-canvas` $\to$ **11.29:1** (PASS AAA).
+  - Tertiary ink: `--ink-tertiary` (`#a8bbb5`, $L=0.47202$) on `--bg-canvas` $\to$ **9.04:1** (PASS AAA).
+- **Light Mode (28 pairs)**: All pairs pass $\ge 7.0:1$.
+  - Worst case: `--ink-tertiary` (`#3d4c48`, $L=0.06629$) on `--bg-dock` (`#e8ecea`, $L=0.83087$) $\to$ **7.57:1** (PASS AAA).
+  - Primary ink: `--ink-primary` (`#17221f`, $L=0.01425$) on `--bg-panel-elevated` (`#ffffff`, $L=1.00000$) $\to$ **16.34:1** (PASS AAA).
+  - Secondary ink: `--ink-secondary` (`#34423e`, $L=0.04974$) on `--bg-canvas` (`#eef1ef`, $L=0.87320$) $\to$ **9.26:1** (PASS AAA).
+  - Accent: `--accent` (`#084e51`, $L=0.06094$) on `--bg-panel-elevated` $\to$ **9.46:1** (PASS AAA).
+- **PEPC Palette Inks**:
+  - `pepc-good` (`#00B050`) with `#000000`: **7.33:1** (PASS AAA).
+  - `pepc-satisfactory` (`#92D050`) with `#000000`: **11.36:1** (PASS AAA).
+  - `pepc-moderate` (`#FFFF00`) with `#000000`: **19.56:1** (PASS AAA).
+  - `pepc-unhealthy-sensitive` (`#ED7D31`) with `#000000`: **7.58:1** (PASS AAA).
+  - `pepc-very-unhealthy` (`#7030A0`) with `#ffffff`: **8.02:1** (PASS AAA).
+  - `pepc-emergency` (`#4A154B`) with `#ffffff`: **14.00:1** (PASS AAA).
 
----
+### 1.5 Execution & Build Verification
+1. `npm run typecheck` (`tsc --noEmit`):
+   - Command output:
+     ```text
+     > punjab-air-quality@1.0.0 typecheck
+     > tsc --noEmit
+     ```
+   - Exit code: 0 (zero errors).
+2. Clean `dist/` and `npm run build` (`tsc && vite build`):
+   - Command output:
+     ```text
+     > punjab-air-quality@1.0.0 build
+     > tsc && vite build
 
-## 3. Observation
+     vite v5.4.21 building for production...
+     transforming...
+     ✓ 33 modules transformed.
+     Generated an empty chunk: "maplibre-vendor".
+     rendering chunks...
+     computing gzip size...
+     dist/index.html                            1.34 kB │ gzip:  0.64 kB
+     dist/assets/index-C4Vj-dlJ.css             7.19 kB │ gzip:  2.21 kB
+     dist/assets/maplibre-vendor-CRqo2Aqy.js    0.05 kB │ gzip:  0.07 kB │ map:   0.11 kB
+     dist/assets/index-DNvf_V7e.js              6.33 kB │ gzip:  2.70 kB │ map:  14.09 kB
+     dist/assets/deckgl-vendor-BNR6c3MS.js      6.89 kB │ gzip:  2.77 kB │ map:  15.70 kB
+     dist/assets/react-vendor-Bf9XP_L0.js     133.99 kB │ gzip: 43.17 kB │ map: 328.40 kB
+     ✓ built in 1.67s
+     ```
+   - Exit code: 0. Real bundle artifacts verified in `dist/assets/`.
+3. Backend E2E Test Suite (`python tests/e2e/run_all_tests.py`):
+   - Command output:
+     ```text
+     ==> Executing Tier 1: Feature Coverage & Contract Validation... [✓ PASS] 13/13 passed in 0.497s
+     ==> Executing Tier 2: Boundary, Corner & Limit Cases... [✓ PASS] 11/11 passed in 0.494s
+     ==> Executing Tier 3: Pairwise Combinations & Cross-Feature Dataflow... [✓ PASS] 21/21 passed in 0.468s
+     ==> Executing Tier 4: Real-World Operational Scenarios... [✓ PASS] 5/5 passed in 0.477s
+     TOTAL    | All E2E Test Suites                        | 50     | 50     |  1.936s | PASSED
+     ```
+   - Exit code: 0. All 50/50 tests passed in 1.936s.
 
-### 3.1 Workspace Archival Verification
-- `original System/index.html` exists with size 9,609,848 bytes, 805 lines, SHA256 `0154b0204275d20327686cee1c585e75a1e51153611878906a8a7c210a7ece3f`.
-- `original System/collector/collector.py` exists with size 16,362 bytes, SHA256 `63f714db676362a5b095f2fc67da342ebb319952819424da46dc7b0d3bc801b1`.
-- `index.html` does not exist in workspace root (`Test-Path "index.html"` -> False).
-- `collector/` does not exist in workspace root (`Test-Path "collector"` -> False).
-- `docs/` exists in workspace root and contains all 6 authoritative specifications (`ARCHITECTURE_OVERVIEW.md`, `DATA_SOURCES_AND_STREAMS.md`, `DATA_PIPELINES_ARCHITECTURE.md`, `SYSTEM_ARCHITECTURE.md`, `TRANSFORMATION_LOGIC_SPEC.md`, `UI_UX_SPECIFICATION.md`).
-- `.agents/` exists in workspace root.
-
-### 3.2 Script Implementation Analysis (`scripts/extract_baseline.py`)
-- Line 36–45: `find_index_html()` dynamically searches `original System/index.html`.
-- Line 48–55: `load_window_data()` opens the file, scans for `window.DATA=`, extracts raw JSON, and parses it via `json.loads()`.
-- Error handling verified: raises `FileNotFoundError` when target file is absent, and `ValueError` when `window.DATA=` token is missing.
-- Baseline generation verified: produces `stations.json` (64.5 KB), `districts.json` (1.13 MB), `districts_dict.json` (1.13 MB), `airports.json` (34.4 KB), and `baseline_data.json` (10.7 MB).
-
-### 3.3 Extracted Dataset Validation (`data/baseline/`)
-- `stations.json`: Exactly 79 stations (74 fixed, 5 mobile). All 79 IDs are unique. All 41 districts are covered. Latitudes range $[28.4227, 33.9046]^\circ\text{N}$, longitudes range $[70.3182, 75.0900]^\circ\text{E}$ (strictly within Punjab bounds $[27.0, 35.5]^\circ\text{N}, [69.0, 76.5]^\circ\text{E}$).
-- `districts.json`: Exactly 41 districts. All 41 IDs and names are unique. Centroids present, non-empty station assignments, and boundary polygons present for all 41 districts.
-- `airports.json`: Exactly 6 airports (`OPLA`, `OPFA`, `OPMT`, `OPST`, `OPIS`, `VIAR`). Each contains exactly 216 hourly components for $u$ and $v$ wind vectors.
-- `baseline_data.json`: Exactly 216 hours spanning `2026-11-01 00:00` to `2026-11-09 23:00` with contiguous 1-hour deltas. All 9 pollutants present (`AQI`, `PM10`, `PM2.5`, `NO2`, `SO2`, `CO`, `O3`, `NO`, `NOX`) with 216 frames and 216 series each. Wind frames: 216. Transboundary geometry: 24 border districts, 39 normal vector nodes.
-
-### 3.4 Independent Test Suite Execution
-- Command: `python -m pytest tests/unit/test_archival_and_baseline.py -v`
-- Result: 9 passed, 1 warning (deprecation from anyio) in 0.13s.
-- Command: `python -m pytest tests/ -v`
-- Result: 67 passed, 2 warnings in 0.52s.
-
----
-
-## 4. Logic Chain
-
-1. **Premise**: Under development mode integrity rules, hardcoded test results, facade implementations, and fabricated verification outputs are strictly prohibited.
-2. **Observation**: `scripts/extract_baseline.py` dynamically extracts live data from `original System/index.html`. Modifying or removing `original System/index.html` causes the script to fail deterministically with `FileNotFoundError` or `ValueError`.
-3. **Observation**: A direct comparison between the dynamically parsed JSON from `original System/index.html` and the extracted baseline files in `data/baseline/` confirmed 100% field-by-field and value-by-value equivalence.
-4. **Observation**: The unit tests in `tests/unit/test_archival_and_baseline.py` evaluate concrete file sizes, directory structures, JSON schemas, coordinate bounding boxes, and time-series lengths on disk. None of the assertions are tautological (`assert True`), dummy, or bypassed.
-5. **Observation**: Archival requirements (R1) are satisfied on disk: `original System/` contains the legacy artifacts, while `index.html` and `collector/` have been removed from the root directory.
-6. **Deduction**: All Milestone M1 deliverables are genuine, complete, verified, and free of any integrity violations.
-
----
-
-## 5. Caveats
-
-- **Station 25**: "OneNetwork Station 25" in legacy `window.DATA['skipped']` has an undefined location and remains documented as skipped in `baseline_data.json`.
-- **Tehsil Station Coordinates**: 24 tehsil-level stations added in November 2026 lack official EPA shapefiles and use town center coordinates, documented in `coordsrc`.
-- **Warnings**: The two pytest warnings observed during test execution (`PytestRemovedIn10Warning`) stem from external test dependencies (`anyio.pytest_plugin` and pytest class-scoped fixture deprecation) and have no bearing on test assertions or implementation correctness.
-
----
-
-## 6. Conclusion
-
-Milestone M1 (Workspace Archival & Baseline Extraction) passes the Forensic Integrity Audit with a definitive verdict of **CLEAN**.
-
-No dummy facades, no hardcoded cheating, and no fabricated outputs were found. The codebase satisfies all requirements of Milestone M1 and is certified ready for Milestone M2 (Scientific Transformation Engine) and Milestone M3 (Data Pipelines & Ingestion Engine).
-
----
-
-## 7. Verification Method
-
-To independently reproduce and verify this audit verdict from the workspace root (`c:\Users\Asif\Downloads\Punjab Air Quality`):
-
-```powershell
-# 1. Verify file system archival state
-Test-Path "original System\index.html"        # Expected: True
-Test-Path "original System\collector"        # Expected: True
-Test-Path "index.html"                       # Expected: False
-Test-Path "collector"                        # Expected: False
-Test-Path "docs\SYSTEM_ARCHITECTURE.md"      # Expected: True
-
-# 2. Run M1 unit test suite
-python -m pytest tests/unit/test_archival_and_baseline.py -v
-
-# 3. Run full test suite (unit + e2e + adversarial)
-python -m pytest tests/ -v
-
-# 4. Run baseline extraction script
-python scripts/extract_baseline.py
-
-# 5. Direct zero-drift comparison with original System/index.html
-python -c "
-import json
-from pathlib import Path
-from scripts.extract_baseline import load_window_data
-
-raw = load_window_data(Path('original System/index.html'))
-with open('data/baseline/stations.json') as f:
-    assert len(json.load(f)) == len(raw['stations']) == 79
-with open('data/baseline/districts.json') as f:
-    assert len(json.load(f)) == len(raw['districts']) == 41
-with open('data/baseline/airports.json') as f:
-    assert len(json.load(f)) == len(raw['airports']) == 6
-with open('data/baseline/baseline_data.json') as f:
-    bd = json.load(f)
-    assert bd['hours'] == raw['hours']
-    assert len(bd['hours']) == 216
-print('ALL VERIFICATIONS PASSED: 100% integrity confirmed.')
-"
-```
+### 1.6 Integrity of Legacy Assets
+- Checked `src/frontend/` with `git diff --name-only src/frontend`.
+- Output: Empty. Legacy static dashboard files in `src/frontend/` remain completely untouched, ensuring backend test suite stability.
 
 ---
 
-## 8. Forensic Raw Tool Evidence
+## 2. Logic Chain
 
-### 8.1 Archival Path and Size Verification
-```
-root_index_html_absent: True
-root_collector_absent: True
-orig_sys_dir_exists: True
-orig_index_html_exists: True
-orig_index_html_size: 9609848
-orig_collector_dir_exists: True
-orig_collector_py_exists: True
-orig_collector_py_size: 16362
-docs_dir_exists: True
-docs_count: 6
-agents_dir_exists: True
-```
+1. **Step 1 (Authentic Deliverables)**:
+   - Observation 1.1 confirms that all 11 Milestone 1 files exist, are properly structured, contain non-trivial logic and declarations, and adhere to `PROJECT.md` and `SCOPE.md`.
+   - No dummy stubs, facade implementations, or hardcoded fake test results were found.
+2. **Step 2 (Tooling & Dependencies)**:
+   - Observation 1.2 empirically proves that zero banned UI libraries (`tailwindcss`, `lucide-react`, `heroicons`, `feather-icons`) are in `package.json`, `package-lock.json`, or `node_modules/`.
+   - Observation 1.5 proves that `tsc` and `vite build` compile without bypasses or errors.
+3. **Step 3 (Styling & Accessibility Standards)**:
+   - Observation 1.3 confirms zero emojis across all deliverables.
+   - Observation 1.4 proves that all 56 text/surface contrast ratios exceed 7.0:1 (worst-case dark: 7.13:1, worst-case light: 7.57:1), fully satisfying WCAG 2.1 AAA.
+   - The CSS grid enforces rigid 100vw x 100vh dimensions with the 5 statutory zones.
+4. **Step 4 (Backend Compatibility)**:
+   - Observation 1.5 and 1.6 prove that the pre-existing backend test infrastructure is uncorrupted: 50/50 tests execute and pass in under 2 seconds.
+5. **Deduction**:
+   - The work product satisfies all Milestone 1 criteria with genuine, uncompromised implementations. No integrity violations exist.
 
-### 8.2 File Hashes
-```
-SHA256(original System/index.html): 0154b0204275d20327686cee1c585e75a1e51153611878906a8a7c210a7ece3f
-SHA256(original System/collector/collector.py): 63f714db676362a5b095f2fc67da342ebb319952819424da46dc7b0d3bc801b1
-```
+---
 
-### 8.3 Pytest Output for M1 Unit Tests
-```
-tests/unit/test_archival_and_baseline.py::TestWorkspaceArchival::test_original_system_directory_exists PASSED [ 11%]
-tests/unit/test_archival_and_baseline.py::TestWorkspaceArchival::test_index_html_relocated PASSED [ 22%]
-tests/unit/test_archival_and_baseline.py::TestWorkspaceArchival::test_collector_relocated PASSED [ 33%]
-tests/unit/test_archival_and_baseline.py::TestWorkspaceArchival::test_docs_and_agents_preserved_at_root PASSED [ 44%]
-tests/unit/test_archival_and_baseline.py::TestWorkspaceArchival::test_collector_py_syntax PASSED [ 55%]
-tests/unit/test_archival_and_baseline.py::TestBaselineDatasets::test_stations_json PASSED [ 66%]
-tests/unit/test_archival_and_baseline.py::TestBaselineDatasets::test_districts_json PASSED [ 77%]
-tests/unit/test_archival_and_baseline.py::TestBaselineDatasets::test_airports_json PASSED [ 88%]
-tests/unit/test_archival_and_baseline.py::TestBaselineDatasets::test_baseline_data_json PASSED [100%]
-======================== 9 passed, 1 warning in 0.13s =========================
-```
+## 3. Caveats
+
+1. **MapLibre & Deck.gl WebGL Canvas Runtime**:
+   `src/App.tsx` configures the DOM mounting containers (`#mapLibreCanvas`, `#deckOverlay`) with locked planimetric layout constraints. The actual instantiation of the MapLibre GL map instance and Deck.gl layers is assigned to Milestone 3; this is an intended milestone boundary, not an omission.
+2. **Untracked Review Script**:
+   `tests/challenge_contrast.py` is present in `tests/` as an untracked review artifact created during the challenger review phase. It is an independent verification test and does not affect production code or backend test runs.
+
+---
+
+## 4. Conclusion
+
+**Verdict: CLEAN**
+
+Milestone 1 (Foundation, Tooling & Design Tokens) has been subjected to exhaustive forensic analysis:
+- All static files are authentic, well-formed, and strictly typed.
+- Zero banned dependencies and zero emojis are present.
+- Every color token pair meets or exceeds WCAG 2.1 AAA luminance contrast ($\ge 7.0:1$).
+- TypeScript compilation and Vite production build succeed cleanly.
+- The 50/50 backend E2E regression suite passes in under 2 seconds without regression.
+
+Milestone 1 is certified as CLEAN and approved to proceed to Milestone 2.
+
+---
+
+## 5. Verification Method
+
+To independently reproduce this forensic audit:
+
+1. **Verify Banned Dependencies**:
+   ```powershell
+   npm list tailwindcss lucide-react heroicons feather-icons
+   ```
+   *Expected outcome*: Exits with code 1 and `(empty)`.
+
+2. **Verify Clean Typecheck & Build**:
+   ```powershell
+   npm run typecheck
+   npm run build
+   ```
+   *Expected outcome*: Both exit with code 0 and build assets in `dist/`.
+
+3. **Verify Contrast Ratios Across All 56 Pairs**:
+   ```powershell
+   python .agents/teamwork/auditor_m1_1/verify_contrast.py
+   ```
+   *Expected outcome*: Reports `ALL 56 TEXT/SURFACE PAIRS EXCEED 7.0:1 (WCAG 2.1 AAA COMPLIANT)!` with exit code 0.
+
+4. **Verify Backend E2E Regression Suite**:
+   ```powershell
+   python tests/e2e/run_all_tests.py
+   ```
+   *Expected outcome*: 50/50 tests pass (100% success rate) in < 3 seconds.

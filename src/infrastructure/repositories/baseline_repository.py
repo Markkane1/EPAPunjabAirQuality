@@ -159,6 +159,11 @@ class BaselineRepository(
         # Label placement cache
         self._label_placements: Dict[str, LabelPlacement] = {}
 
+        # Auxiliary feeds storage
+        self._latest_fires: List[Any] = []
+        self._latest_cross_border: List[Any] = []
+        self._latest_cams: Optional[Any] = None
+
         # LSP-compliant adapter facades
         self._station_repo = BaselineStationRepository(self)
         self._district_repo = BaselineDistrictRepository(self)
@@ -724,7 +729,12 @@ class BaselineRepository(
     def get_district_observation(self, district_id: str, timestamp: datetime) -> Optional[DistrictObservation]:
         with self._lock:
             dt = timestamp if timestamp.tzinfo else timestamp.replace(tzinfo=timezone.utc)
-            return self._district_obs_by_id_and_time.get((str(district_id), dt))
+            res = self._district_obs_by_id_and_time.get((str(district_id), dt))
+            if res is None:
+                d_meta = self._districts.get(str(district_id)) or self._districts_by_name.get(str(district_id).strip().lower())
+                if d_meta:
+                    res = self._district_obs_by_id_and_time.get((d_meta.name, dt)) or self._district_obs_by_id_and_time.get((d_meta.id, dt))
+            return res
 
     def get_latest_district_observations(self, pollutant: Optional[str] = None) -> List[DistrictObservation]:
         with self._lock:
@@ -921,9 +931,19 @@ class BaselineRepository(
                         o = replace(o, recorded_at=o.recorded_at.astimezone(timezone.utc))
                 dt = o.recorded_at
 
-                key = (o.district_id, dt)
+                key = (str(o.district_id), dt)
                 is_existing = key in self._district_obs_by_id_and_time
                 self._district_obs_by_id_and_time[key] = o
+
+                d_meta = self._districts.get(str(o.district_id)) or self._districts_by_name.get(str(o.district_id).strip().lower())
+                dist_keys_to_index = [str(o.district_id)]
+                if d_meta:
+                    self._district_obs_by_id_and_time[(str(d_meta.id), dt)] = o
+                    self._district_obs_by_id_and_time[(d_meta.name, dt)] = o
+                    if str(d_meta.id) not in dist_keys_to_index:
+                        dist_keys_to_index.append(str(d_meta.id))
+                    if d_meta.name not in dist_keys_to_index:
+                        dist_keys_to_index.append(d_meta.name)
 
                 # 2. Update _district_obs_by_time[dt] with deduplication
                 if dt not in self._district_obs_by_time:
@@ -940,23 +960,24 @@ class BaselineRepository(
                     else:
                         time_list.append(o)
 
-                # 3. Update _district_obs_by_district[district_id] maintaining sorted order without duplicates
-                if o.district_id not in self._district_obs_by_district:
-                    self._district_obs_by_district[o.district_id] = [o]
-                else:
-                    series = self._district_obs_by_district[o.district_id]
-                    idx = bisect_left(
-                        series,
-                        dt,
-                        key=lambda x: x.recorded_at if x.recorded_at.tzinfo else x.recorded_at.replace(tzinfo=timezone.utc),
-                    )
-                    if (
-                        idx < len(series)
-                        and (series[idx].recorded_at if series[idx].recorded_at.tzinfo else series[idx].recorded_at.replace(tzinfo=timezone.utc)) == dt
-                    ):
-                        series[idx] = o
+                # 3. Update _district_obs_by_district for all resolved aliases
+                for did in dist_keys_to_index:
+                    if did not in self._district_obs_by_district:
+                        self._district_obs_by_district[did] = [o]
                     else:
-                        series.insert(idx, o)
+                        series = self._district_obs_by_district[did]
+                        idx = bisect_left(
+                            series,
+                            dt,
+                            key=lambda x: x.recorded_at if x.recorded_at.tzinfo else x.recorded_at.replace(tzinfo=timezone.utc),
+                        )
+                        if (
+                            idx < len(series)
+                            and (series[idx].recorded_at if series[idx].recorded_at.tzinfo else series[idx].recorded_at.replace(tzinfo=timezone.utc)) == dt
+                        ):
+                            series[idx] = o
+                        else:
+                            series.insert(idx, o)
 
             self.clear_cache()
 
@@ -1064,3 +1085,66 @@ class BaselineRepository(
 
     def invalidate_caches(self, timestamps: Optional[List[datetime]] = None) -> None:
         self.clear_cache()
+
+    # -------------------------------------------------------------------------
+    # Auxiliary Feeds and Real Rolling 24-h Statistics
+    # -------------------------------------------------------------------------
+    def set_latest_auxiliary_feeds(
+        self,
+        fires: Optional[List[Any]] = None,
+        cross_border: Optional[List[Any]] = None,
+        cams: Optional[Any] = None,
+    ) -> None:
+        with self._lock:
+            if fires is not None:
+                self._latest_fires = list(fires)
+            if cross_border is not None:
+                self._latest_cross_border = list(cross_border)
+            if cams is not None:
+                self._latest_cams = cams
+
+    def get_latest_fires(self) -> List[Any]:
+        with self._lock:
+            return list(self._latest_fires)
+
+    def get_latest_cross_border(self) -> List[Any]:
+        with self._lock:
+            return list(self._latest_cross_border)
+
+    def get_latest_cams(self) -> Optional[Any]:
+        with self._lock:
+            return self._latest_cams
+
+    def calculate_station_24h_rolling_mean(
+        self, station_id: str, timestamp: Optional[datetime] = None, pollutant: str = "PM2.5"
+    ) -> Optional[float]:
+        with self._lock:
+            ts = timestamp or self._latest_timestamp
+            if ts is None:
+                return None
+            dt_end = ts if ts.tzinfo else ts.replace(tzinfo=timezone.utc)
+            from datetime import timedelta
+            dt_start = dt_end - timedelta(hours=24)
+            series = self.get_station_hourly_series(station_id, start_time=dt_start, end_time=dt_end, pollutant=pollutant)
+            p_attr = pollutant.lower().replace(".", "").replace("-", "")
+            vals = [getattr(o, p_attr) for o in series if getattr(o, p_attr, None) is not None]
+            if not vals:
+                return None
+            return round(sum(vals) / len(vals), 1)
+
+    def calculate_district_24h_rolling_mean(
+        self, district_id: str, timestamp: Optional[datetime] = None, pollutant: str = "PM2.5"
+    ) -> Optional[float]:
+        with self._lock:
+            ts = timestamp or self._latest_timestamp
+            if ts is None:
+                return None
+            dt_end = ts if ts.tzinfo else ts.replace(tzinfo=timezone.utc)
+            from datetime import timedelta
+            dt_start = dt_end - timedelta(hours=24)
+            series = self.get_district_hourly_series(district_id, start_time=dt_start, end_time=dt_end, pollutant=pollutant)
+            p_attr = pollutant.lower().replace(".", "").replace("-", "")
+            vals = [getattr(o, p_attr) for o in series if getattr(o, p_attr, None) is not None]
+            if not vals:
+                return None
+            return round(sum(vals) / len(vals), 1)

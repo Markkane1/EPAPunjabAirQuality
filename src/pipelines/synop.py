@@ -4,7 +4,7 @@ Parses telegraphic synoptic telegrams (AAXX) from Ogimet gateway for WMO blocks 
 Implements telegraphic decoding, 65s HTTP 429 rate limit backoff floor, and fallback failover.
 Adheres to DATA_SOURCES_AND_STREAMS.md §3.3.
 """
-from datetime import datetime, timezone
+from datetime import datetime, timezone, timedelta
 import logging
 import math
 import re
@@ -75,7 +75,8 @@ class SynopIngestionWorker(BaseIngestionWorker):
         """
         now = datetime.now(timezone.utc)
         target_block = block or self.blocks[0]
-        b_str = begin_str or (now.strftime("%Y%m%d%H00"))
+        # Look back up to 6 hours to capture the most recent synoptic report (00/06/12/18 UTC)
+        b_str = begin_str or ((now - timedelta(hours=6)).strftime("%Y%m%d%H00"))
         e_str = end_str or (now.strftime("%Y%m%d%H59"))
 
         params = {
@@ -114,8 +115,8 @@ class SynopIngestionWorker(BaseIngestionWorker):
         if "AAXX" not in line:
             return None
 
-        # Clean line and split tokens
-        clean_line = line.replace("=", "").strip()
+        # Clean line and split tokens. Replace commas with spaces so Ogimet CSV headers don't fuse with AAXX
+        clean_line = line.replace("=", "").replace(",", " ").strip()
         tokens = clean_line.split()
         if "AAXX" not in tokens:
             return None

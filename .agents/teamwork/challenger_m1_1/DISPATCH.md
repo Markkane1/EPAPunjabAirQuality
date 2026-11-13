@@ -1,33 +1,23 @@
-# Task Assignment: Milestone M1 Challenger 1
+## 2026-11-11T13:41:18Z
+You are Challenger 1 for Milestone 1 (Foundation, Tooling & Design Tokens) of the EPA Punjab Air Quality Workstation.
+Working directory: c:\Users\Asif\Downloads\Punjab Air Quality
+State folder: c:\Users\Asif\Downloads\Punjab Air Quality\.agents\teamwork\challenger_m1_1
 
-You are `challenger_m1_1` (Type: `teamwork_challenger`).
-Working directory: `c:\Users\Asif\Downloads\Punjab Air Quality\.agents\teamwork\challenger_m1_1\`
+MANDATORY READING:
+- c:\Users\Asif\Downloads\Punjab Air Quality\.agents\teamwork\ORIGINAL_REQUEST.md
+- c:\Users\Asif\Downloads\Punjab Air Quality\PROJECT.md
+- c:\Users\Asif\Downloads\Punjab Air Quality\.agents\teamwork\sub_orch_m1\SCOPE.md
+- c:\Users\Asif\Downloads\Punjab Air Quality\.agents\teamwork\worker_m1\handoff.md
 
-## Authoritative Specifications
-Read:
-- `c:\Users\Asif\Downloads\Punjab Air Quality\.agents\teamwork\ORIGINAL_REQUEST.md`
-- `c:\Users\Asif\Downloads\Punjab Air Quality\.agents\teamwork\orchestrator\PROJECT.md`
-- `c:\Users\Asif\Downloads\Punjab Air Quality\.agents\teamwork\worker_m1_archival\handoff.md`
-
-## Objectives
-1. Empirically and adversarially challenge Milestone M1:
-   - Check if any remnants of index.html or collector/ exist outside `original System/`.
-   - Write and run empirical validation scripts checking:
-     - All 79 stations in `stations.json` have distinct IDs, valid names, and coordinates within $[27.0, 35.5]^\circ\text{N}$ and $[69.0, 76.5]^\circ\text{E}$.
-     - All 41 districts in `districts.json` have non-empty station arrays and valid boundaries.
-     - `baseline_data.json` contains exactly 216 hours without gaps, missing keys, or corrupted timestamps.
-2. Deliver your empirical findings and verdict (CONFIRM / CHALLENGE_FAIL) in `handoff.md` and message the orchestrator.
-
-## 2026-11-10T13:04:00Z
-You are challenger_m1_1.
-Working directory: c:\Users\Asif\Downloads\Punjab Air Quality\.agents\teamwork\challenger_m1_1\
-Read c:\Users\Asif\Downloads\Punjab Air Quality\.agents\teamwork\challenger_m1_1\DISPATCH.md, c:\Users\Asif\Downloads\Punjab Air Quality\.agents\teamwork\ORIGINAL_REQUEST.md, c:\Users\Asif\Downloads\Punjab Air Quality\.agents\teamwork\orchestrator\PROJECT.md, and c:\Users\Asif\Downloads\Punjab Air Quality\.agents\teamwork\worker_m1_archival\handoff.md.
-
-Adversarially challenge Milestone M1. Write and run empirical validation scripts checking 79 stations coordinates, 41 districts boundaries, and 216 continuous baseline hours without gaps. Deliver your verdict (CONFIRM or CHALLENGE_FAIL) in handoff.md and notify the orchestrator.
-
-## 2026-11-10T13:16:36Z
-You are challenger_m1_1 (respawned).
-Working directory: c:\Users\Asif\Downloads\Punjab Air Quality\.agents\teamwork\challenger_m1_1\
-Read c:\Users\Asif\Downloads\Punjab Air Quality\.agents\teamwork\challenger_m1_1\DISPATCH.md, c:\Users\Asif\Downloads\Punjab Air Quality\.agents\teamwork\ORIGINAL_REQUEST.md, c:\Users\Asif\Downloads\Punjab Air Quality\.agents\teamwork\orchestrator\PROJECT.md, and c:\Users\Asif\Downloads\Punjab Air Quality\.agents\teamwork\worker_m1_archival\handoff.md.
-
-Adversarially challenge Milestone M1. Write and run empirical validation scripts checking 79 stations coordinates, 41 districts boundaries, and 216 continuous baseline hours without gaps. Deliver your verdict (CONFIRM or CHALLENGE_FAIL) in handoff.md and notify the orchestrator.
+Adversarial Challenge Objectives:
+1. Empirically verify WCAG 2.1 AAA luminance contrast compliance across ALL text/surface color pairs in `src/styles/tokens.css`.
+   - Write an empirical testing script/harness calculating relative luminance and contrast ratio according to W3C standards.
+   - Test all dark mode surfaces (`--bg-canvas`, `--bg-panel`, `--bg-panel-elevated`, `--bg-dock`, `--bg-inspector`) against all dark mode text colors (`--ink-primary`, `--ink-secondary`, `--ink-tertiary`, `--accent`).
+   - Test all light mode surfaces against all light mode text colors.
+   - Test any boundary combinations. Prove whether any single combination drops below 7.000:1.
+2. Stress-test the banned dependency constraints:
+   - Audit node_modules, package.json, package-lock.json for any transitive or direct presence of `tailwindcss`, `lucide-react`, `heroicons`, `feather-icons`.
+3. Determine your verdict: APPROVE or REJECT.
+4. Write your full challenge report to:
+   c:\Users\Asif\Downloads\Punjab Air Quality\.agents\teamwork\challenger_m1_1\handoff.md
+5. Notify the orchestrator with send_message with your verdict.

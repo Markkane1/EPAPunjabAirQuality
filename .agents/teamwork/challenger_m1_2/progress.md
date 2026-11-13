@@ -1,15 +1,17 @@
-# Challenger M1_2 Progress
+# Progress — Milestone 1 Adversarial Challenge (Challenger 2)
 
-Last visited: 2026-11-10T13:10:00Z
-Status: Verification Complete — Verdict: CONFIRM
+Last visited: 2026-11-11T13:55:00Z
 
-## Steps
-- [x] Received dispatch and initialized BRIEFING.md and progress.md
-- [x] Read authoritative documentation (ORIGINAL_REQUEST.md, PROJECT.md, worker_m1_archival handoff.md)
-- [x] Empirically test archival non-destructive properties (original System/ preservation, index.html integrity, collector/ intactness)
-- [x] Empirically test docs/ integrity and exact byte sizes
-- [x] Adversarially cross-check window.DATA against data/baseline/stations.json, districts.json, airports.json, baseline_data.json
-- [x] Stress-test edge cases: station ID collisions, null/NaN fields, mobile station assignments, idempotence of extract_baseline.py
-- [x] Executed full test suite (92/92 tests passing, 0 failures)
-- [x] Deliver verdict (CONFIRM) in handoff.md
-- [x] Notify orchestrator via send_message
+- [x] Initialized DISPATCH.md and updated BRIEFING.md
+- [x] Read mandatory files: ORIGINAL_REQUEST.md, PROJECT.md, SCOPE.md, worker_m1/handoff.md
+- [x] Empirically run typecheck (`npm run typecheck` / `npx tsc --noEmit`) -> 0 errors (PASS)
+- [x] Empirically run build (`npm run build` / `npx vite build`) -> exit 0, dist/ generated (PASS)
+- [x] Empirically inspect `dist/` artifacts, sourcemaps, and chunk separation -> verified acyclic graph (PASS)
+- [x] Empirically verify layout constraints in `src/styles/grid.module.css` (100vw x 100vh, overflow, margins) -> Playwright across 4 viewports, 0 scrollbars (PASS)
+- [x] Empirically verify design system tokens: 0px border-radius, 1px solid hairlines, 0 drop-shadows, 0 backdrop-filter -> computedStyle on all DOM elements (PASS)
+- [x] Empirically verify tabular-nums in `src/styles/typography.css` and across font rules -> font-variant-numeric: tabular-nums (PASS)
+- [x] Empirically scan for emojis across all codebase files, HTML, CSS, configs, titles -> 0 emojis (PASS)
+- [x] Empirically verify WCAG 2.1 AAA luminance contrast mathematical ratios -> 100% >= 7.0:1 (PASS)
+- [x] Empirically run backend E2E regression suite -> 50/50 tests passed (PASS)
+- [x] Formulate verdict: APPROVE
+- [ ] Write handoff report `handoff.md` and send message to orchestrator

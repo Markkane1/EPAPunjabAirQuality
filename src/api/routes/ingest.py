@@ -1,11 +1,116 @@
-"""API Route Module: Custom User CSV Ingestion (/api/v1/ingest)."""
-from fastapi import APIRouter, Depends, File, Form, HTTPException, UploadFile, status
+"""API Route Module: Custom User CSV Ingestion & Background Scheduler (/api/v1/ingest)."""
+from typing import Any, Dict, List
+from fastapi import APIRouter, Depends, File, Form, HTTPException, Request, UploadFile, status
 
 from src.api.dependencies import get_ingestion_service
 from src.api.schemas.ingest import CSVIngestResponse
 from src.services.ingestion_service import IngestionService
 
 router = APIRouter(prefix="/api/v1/ingest", tags=["Ingestion"])
+
+
+# =============================================================================
+# Standing Background Cron Scheduler Daemon Endpoints
+# =============================================================================
+
+@router.get(
+    "/scheduler/status",
+    summary="Get background cron scheduler daemon status and operational telemetry",
+)
+async def get_scheduler_status(request: Request) -> Dict[str, Any]:
+    """Returns standing cron daemon status, APScheduler engine health, and active execution metrics."""
+    orchestrator = getattr(request.app.state, "orchestrator", None)
+    if not orchestrator:
+        raise HTTPException(
+            status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
+            detail="Pipeline orchestrator is not initialized.",
+        )
+    return orchestrator.get_status()
+
+
+@router.get(
+    "/scheduler/jobs",
+    summary="List all registered standing cron jobs and next run times",
+)
+async def list_scheduler_jobs(request: Request) -> List[Dict[str, Any]]:
+    """Returns details, cron expressions, next fire times, and execution counts for all pipeline jobs."""
+    orchestrator = getattr(request.app.state, "orchestrator", None)
+    if not orchestrator:
+        raise HTTPException(
+            status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
+            detail="Pipeline orchestrator is not initialized.",
+        )
+    return orchestrator.get_cron_jobs()
+
+
+@router.post(
+    "/scheduler/jobs/{job_id}/trigger",
+    summary="Manually trigger immediate execution of a scheduled cron job",
+)
+async def trigger_scheduler_job(job_id: str, request: Request) -> Dict[str, Any]:
+    """Dispatches an immediate manual execution of a registered ingestion or harmonization job."""
+    orchestrator = getattr(request.app.state, "orchestrator", None)
+    if not orchestrator:
+        raise HTTPException(
+            status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
+            detail="Pipeline orchestrator is not initialized.",
+        )
+    try:
+        return await orchestrator.trigger_cron_job(job_id)
+    except ValueError as e:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=str(e))
+    except Exception as e:
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"Failed to execute job '{job_id}': {str(e)}",
+        )
+
+
+@router.post(
+    "/scheduler/jobs/{job_id}/pause",
+    summary="Pause a scheduled cron job",
+)
+async def pause_scheduler_job(job_id: str, request: Request) -> Dict[str, Any]:
+    """Pauses future cron triggers for the specified job ID."""
+    orchestrator = getattr(request.app.state, "orchestrator", None)
+    if not orchestrator:
+        raise HTTPException(
+            status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
+            detail="Pipeline orchestrator is not initialized.",
+        )
+    success = orchestrator.pause_cron_job(job_id)
+    if not success:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail=f"Job '{job_id}' not found or could not be paused.",
+        )
+    return {"status": "paused", "job_id": job_id}
+
+
+@router.post(
+    "/scheduler/jobs/{job_id}/resume",
+    summary="Resume a paused cron job",
+)
+async def resume_scheduler_job(job_id: str, request: Request) -> Dict[str, Any]:
+    """Resumes cron triggers for a previously paused job ID."""
+    orchestrator = getattr(request.app.state, "orchestrator", None)
+    if not orchestrator:
+        raise HTTPException(
+            status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
+            detail="Pipeline orchestrator is not initialized.",
+        )
+    success = orchestrator.resume_cron_job(job_id)
+    if not success:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail=f"Job '{job_id}' not found or could not be resumed.",
+        )
+    return {"status": "resumed", "job_id": job_id}
+
+
+# =============================================================================
+# Custom User CSV Ingestion
+# =============================================================================
 
 
 @router.post(

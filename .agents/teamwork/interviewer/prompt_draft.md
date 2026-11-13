@@ -1,56 +1,66 @@
-Build the full end-to-end Punjab Air Quality monitoring, processing, and visualization system according to the specifications in docs/, organizing the codebase with clean architecture, software engineering principles, component-driven design patterns, and high reusability to support both live external streams and custom user datasets.
+Implement the end-to-end frontend for the EPA Punjab Air Quality Monitoring, Processing, and Visualization System as an institutional atmospheric physics and regulatory enforcement workstation.
 
-Working directory: c:\Users\Asif\Downloads\Punjab Air Quality
 Integrity mode: development
 
-## Reference Specifications
-- docs/ARCHITECTURE_OVERVIEW.md
-- docs/DATA_SOURCES_AND_STREAMS.md
-- docs/TRANSFORMATION_LOGIC_SPEC.md
-- docs/DATA_PIPELINES_ARCHITECTURE.md
-- docs/SYSTEM_ARCHITECTURE.md
-- docs/UI_UX_SPECIFICATION.md
+Reference Materials:
+- `TEST_INFRA.md`
+- `docs/TRANSFORMATION_LOGIC_SPEC.md`
+- `docs/UI_UX_SPECIFICATION.md`
+- `docs/SYSTEM_ARCHITECTURE.md`
+- `data/baseline/baseline_data.json`
+- `data/baseline/airports.json`
 
 ## Requirements
 
-### R1. Archive Existing Workspace Artifacts
-Move existing project files (index.html and the collector/ directory) into a new directory named "original System", while preserving docs/ and .agents/ in the project root.
+### R1. Institutional Workstation Architecture & Visual Design
+Build a rigid 100vw x 100vh CSS Grid five-zone workstation interface using strictly scoped CSS Modules backed by WCAG 2.1 AAA tokens in `src/styles/tokens.css` (>= 7.0:1 contrast). Load exclusively IBM Plex Sans, IBM Plex Sans Condensed, and IBM Plex Mono typography, enforcing tabular-nums formatting on all numeric readouts. Do not use Tailwind CSS, generic fonts, consumer icon packs (lucide-react, heroicons), emojis, 3D tilted map perspectives, backdrop-filter blur, or drop shadows; use crisp 1.25px miter-joined inline SVGs or deck.gl primitives and 1px solid structural hairlines.
 
-### R2. Data Pipeline & Ingestion Engine
-Implement modular data ingestion pipelines adhering to docs/DATA_SOURCES_AND_STREAMS.md and docs/DATA_PIPELINES_ARCHITECTURE.md. Connect to accessible live external data feeds where available, extract station metadata and historical records from the original artifacts for baseline data templating, and provide clear interfaces allowing the system to ingest and test against user-provided CSV and custom datasets.
+### R2. Central Planimetric Map Canvas & Five-Layer Deck.gl Stack
+Implement a strictly 2D planimetric MapLibre GL map canvas (pitch: 0, bearing: 0, dragRotate: false) with an interleaved deck.gl MapboxOverlay rendering 5 authoritative layers:
+1. Spatial Surface: 2D continuous IDW spatial surface bitmap honoring the Plate Carrée aspect ratio (K_X = cos 31°), supporting both discrete geodesic (T1) and anisotropic wind-steered (T2) modes.
+2. District Choropleth & Labels: 41 district polygons colored by statutory PEPC hex colors, applying diagonal hatching for estimated/unmonitored districts, and deterministic Greedy AABB label collision placement.
+3. Wind Vector Field: 3-state vector display distinguishing telemetry dropouts (null), aerodynamic calm (<0.50 m/s), and active wind vectors, while enforcing the station 172 (Wazirabad) anemometer blacklist.
+4. Advection Flux & Transboundary Border Belt: Top-60 coupled pathways (d <= 180.0 km, cone <= 35.0°) with physical dimension guard locking flux calculations to PM2.5 when AQI is selected, and 39 transboundary border normal chevrons triggering crimson when normal dot product Phi_j > +0.25 m/s.
+5. Stations & Aerodromes: 79 monitoring stations (fixed circles, mobile diamonds, ICAO aerodrome crosshairs) with distinct disaggregation for Lahore's 13 micro-airshed stations.
 
-### R3. Transformation Logic Implementation
-Implement the scientific transformation algorithms as defined in docs/TRANSFORMATION_LOGIC_SPEC.md, including IDW spatial interpolation, CPF polar roses, pollutant flux calculations, and PEPC breakpoint calculations, adhering to clean architecture with decoupled pure functions and documented mathematical inputs/outputs.
+### R3. Telemetry, Controls & Inspector Panels
+- Zone 1 Top Command Bar: System identity, live stream vs. fallback baseline indicator, assertive ARIA live alerts for hazardous conditions or 500 ceiling clamp, 9-pollutant statutory switcher (AQI, PM2.5, PM10, NO2, SO2, CO, O3, NO, NOX), CSV ingestion trigger, and QA drawer toggle.
+- Zone 2 Spatial Control Dock: 5-layer stack toggles, transboundary mass-balance attribution split bar (cross-border easterly inflow vs. domestic emissions), and 41-district statutory ranking table with row selection centering the map.
+- Zone 4 Receptor Inspector: Station/district metadata, 9-parameter statutory sub-index and QA table with 75% temporal completeness enforcement, 16-sector CPF polar wind rose with small-sample suppression (N_k < 6) and calm exclusion, and 216-hour time-series QC chart highlighting 7-hour median spikes and 3-hour logger holds (with AQI exempted).
 
-### R4. Core Services & Backend Architecture
-Implement the backend architecture and API services specified in docs/SYSTEM_ARCHITECTURE.md and docs/ARCHITECTURE_OVERVIEW.md, maintaining strict boundary separation between data sources, business logic, storage adapters, and presentation interfaces.
+### R4. Temporal Playback Scrubber & PEPC Scale Governance
+Implement Zone 5 timeline scrubber covering the 216-hour baseline (2026-11-01 00:00 to 2026-11-09 23:00) with playback transport controls, horizon sparkline of provincial max AQI for jumping to severe smog inversion episodes, and statutory PEPC continuous half-open piecewise linear AQI scale clamped at 500 when PM2.5 > 350 μg/m³. Decouple timeline scrubbing from static geometry using GPU update triggers without re-parsing GeoJSON on the CPU.
 
-### R5. Component-Driven UI/UX Dashboard
-Implement the interactive user interface specified in docs/UI_UX_SPECIFICATION.md, adhering to component-driven design patterns, responsive layouts, clear visual hierarchy, accessible color palettes, and real-time visualization components.
-
-### R6. Automated Verification and Test Suite
-Implement automated test suites covering pipeline data ingestion, mathematical transformation algorithms, backend API contracts, and UI component rendering against the specifications in docs/.
+### R5. Data Normalization, Ingestion & Backend Integration
+Query the FastAPI backend at `http://127.0.0.1:9000/api/v1/*` and provide seamless fallback to in-memory baseline structures (`baseline_data.json` and `airports.json`). Implement `dataNormalizer.ts` addressing all five schema traps:
+- Invert district centroid `[lat, lon]` to `[lon, lat]` while keeping `label` and `boundary` `[lon, lat]` unchanged.
+- Differentiate aerodrome `null` wind outages from aerodynamic calm.
+- Hard-block wind vector rendering for station 172 (Wazirabad) due to vane offset blacklist.
+- Compute fixed vs. mobile station counts dynamically.
+- Unify estimation flags and apply diagonal hatching to estimated polygons.
+Support multipart CSV ingestion (`POST /api/v1/ingest/csv`) validated against `UserCSVRowContract` with dynamic re-interpolation. Serve or proxy the frontend so `http://127.0.0.1:9000` renders the production dashboard without breaking any `/api/v1/*` routes or backend E2E tests.
 
 ## Acceptance Criteria
 
-### Workspace Archival
-- [ ] index.html and collector/ are relocated under original System/.
-- [ ] docs/ remains intact in the workspace root.
+### Institutional Visual Standards & Dependencies
+- [ ] `package.json` contains no banned dependencies (`tailwindcss`, `lucide-react`, `heroicons`, `feather-icons`).
+- [ ] `index.html` loads exclusively `IBM Plex Sans`, `IBM Plex Sans Condensed`, and `IBM Plex Mono`.
+- [ ] Tabular-nums formatting is enforced for all numeric readouts.
+- [ ] No emojis are used in code, UI text, or ARIA labels.
+- [ ] MapLibre pitch is permanently locked to 0 with rotation disabled (`pitch: 0, maxPitch: 0, bearing: 0, dragRotate: false, touchPitch: false`).
+- [ ] All text/surface pairs in `src/styles/tokens.css` meet WCAG 2.1 AAA contrast ratio (>= 7.0:1).
 
-### Pipeline and Ingestion
-- [ ] Pipeline modules ingest data from configured live endpoints or fallback to schema-conforming templates seeded from station data in original System/index.html.
-- [ ] An ingestion adapter exists that accepts and validates user-provided CSV datasets conforming to the specification schema.
+### Mathematical, Cartographic & Physical Exactness
+- [ ] District centroids are normalized from `[lat, lon]` to `[lon, lat]` before passing to deck.gl layers.
+- [ ] Aerodrome wind values of `null` render as missing telemetry dropout glyphs, wind speeds 0.0 <= ws < 0.500 m/s render as aerodynamic calm circles, and ws >= 0.500 m/s render directional vectors.
+- [ ] Station 172 (Wazirabad) wind vectors are suppressed and flagged as ANEMOMETER BLACKLISTED (VANE OFFSET).
+- [ ] When AQI is selected, advection flux calculations and display lock to PM2.5 (μg/m³) with a physical dimension guard banner.
+- [ ] Transboundary border nodes render crimson chevrons strictly when dot product Phi_j > +0.25 m/s.
+- [ ] CPF polar wind rose suppresses sectors with N_k < 6 valid wind hours and excludes calm periods (ws < 0.50 m/s).
+- [ ] Temporal QC chart visually flags 7-hour median spikes and 3-hour logger holds (with AQI exempted).
+- [ ] All 13 Lahore stations are individually pickable and distinguishable on the map canvas.
 
-### Transformation Logic
-- [ ] Automated tests verify IDW spatial interpolation, CPF polar rose calculations, flux calculations, and PEPC breakpoints against known reference fixtures with deterministic output matching docs/TRANSFORMATION_LOGIC_SPEC.md.
-
-### System Architecture & APIs
-- [ ] Clean architecture boundaries are established with isolated domain models, business logic, data access abstractions, and API routing.
-- [ ] Backend API endpoints serve station metadata, live/current readings, historical trends, and spatial interpolation outputs.
-
-### UI/UX Interface
-- [ ] Frontend dashboard renders station map, pollutant breakdown metrics, wind/flux indicators, and historical trend charts according to docs/UI_UX_SPECIFICATION.md.
-- [ ] Interactive UI components respond to filter, station selection, and time-range queries without unhandled errors.
-
-### Automated Test Verification
-- [ ] Unit and integration test suites pass completely via automated test runners with zero failures.
+### Verification & Integration Guardrails
+- [ ] Backend E2E regression suite (`python tests/e2e/run_all_tests.py`) passes 50/50 tests (100%) in < 30 seconds.
+- [ ] Frontend builds cleanly with zero TypeScript compilation or bundle errors (`tsc`, `npm run build`).
+- [ ] The dashboard is accessible at `http://127.0.0.1:9000` while preserving all `/api/v1/*` endpoints.

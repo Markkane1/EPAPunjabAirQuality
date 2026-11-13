@@ -1,139 +1,225 @@
-# Empirical Challenge Handoff Report: Milestone M1
+# Milestone 1 Adversarial Challenge Report: Foundation, Tooling & Design Tokens
 
 **Agent**: `challenger_m1_1`  
-**Milestone**: M1 (Workspace Archival & Baseline Extraction)  
-**Date**: 2026-11-10T13:20:00Z  
-**Working Directory**: `c:\Users\Asif\Downloads\Punjab Air Quality\.agents\teamwork\challenger_m1_1\`  
-**Verdict**: **CONFIRM**
+**State Folder**: `c:\Users\Asif\Downloads\Punjab Air Quality\.agents\teamwork\challenger_m1_1`  
+**Date**: 2026-11-11  
+**Verdict**: **APPROVE**  
 
 ---
 
 ## 1. Observation
 
-### 1.1 Archival Cleanliness Verification
-Executed directory search across the entire project root (`c:\Users\Asif\Downloads\Punjab Air Quality\`) excluding `.git`:
-- `original System/index.html` exists with size 9,609,848 bytes and 805 lines.
-- `original System/collector/collector.py` exists with size 16,362 bytes.
-- Zero files matching `index.html`, `index.htm`, or `collector.py` exist outside `original System/`.
-- Zero directories named `collector` exist outside `original System/`.
-- Preserved at project root: `docs/` (6 markdown specification files intact) and `.agents/` (teamwork metadata intact).
+### 1.1 Empirical Verification Test Harness Execution
+To avoid relying on worker self-reporting, an independent empirical test script (`tests/challenge_contrast.py`) was created and executed directly against `src/styles/tokens.css`, `package.json`, `package-lock.json`, and `node_modules`.
 
-### 1.2 79 Station Coordinates & Catalog Verification
-Inspected `data/baseline/stations.json` and cross-referenced with `original System/index.html` (`window.DATA['stations']`):
-- Station count: Exactly 79 stations.
-- ID uniqueness: 79 unique string IDs (`id` / `station_id`), and 79 unique `numeric_id` values spanning $1..79$.
-- Name uniqueness: 79 unique station names, all trimmed without leading/trailing whitespace.
-- Coordinate bounding box:
-  - Latitude: $\min = 28.422725^\circ\text{N}$, $\max = 33.904650^\circ\text{N}$ (strictly within $[27.0, 35.5]^\circ\text{N}$).
-  - Longitude: $\min = 70.318247^\circ\text{E}$, $\max = 75.090000^\circ\text{E}$ (strictly within $[69.0, 76.5]^\circ\text{E}$).
-- Aliases: `lat == latitude` and `lon == longitude` identical for all 79 stations.
-- Pairwise uniqueness: All 79 station coordinates are geographically distinct (0 spatial collisions).
-- Station partition: Exactly 5 mobile stations (all located in Lahore, `network_type="mobile"`, `mobile=True`) and 74 fixed stations (`network_type="fixed"`, `mobile=False`).
-- Centroid proximity: Maximum distance between any station and its assigned district centroid is $40.86\text{ km}$ (well within expected geographical limits).
+The test parses the CSS file and applies the official W3C WCAG 2.1 relative luminance and contrast ratio algorithms:
+- Relative luminance: $L = 0.2126 R + 0.7152 G + 0.0722 B$ where $R, G, B = C / 12.92$ if $C_{srgb} \le 0.04045$ else $((C_{srgb} + 0.055) / 1.055)^{2.4}$.
+- Contrast ratio: $CR = \frac{L_1 + 0.05}{L_2 + 0.05}$ where $L_1 = \max(L_a, L_b)$ and $L_2 = \min(L_a, L_b)$.
 
-### 1.3 41 District Boundaries & Topology Verification
-Inspected `data/baseline/districts.json` and `data/baseline/districts_dict.json`:
-- District count: Exactly 41 administrative districts.
-- Centroid bounding box:
-  - Latitude: $\min = 28.423^\circ\text{N}$, $\max = 33.905^\circ\text{N}$ (strictly within $[27.0, 35.5]^\circ\text{N}$).
-  - Longitude: $\min = 70.318^\circ\text{E}$, $\max = 74.992^\circ\text{E}$ (strictly within $[69.0, 76.5]^\circ\text{E}$).
-- Station linkage: Every one of the 41 districts has $\ge 1$ station in `stations`. Sum of station counts across all 41 districts equals exactly 79. `station_count == len(stations)` for all 41 districts. Bidirectional consistency confirmed between stations and districts.
-- Boundary polygon topology:
-  - Total rings: 44 polygon rings across 41 districts.
-  - Total vertices: 8,148 vertices.
-  - Ring closure: All 44 rings are closed ($ring[0] == ring[-1]$) with $\ge 4$ vertices each.
-  - Ring area: All 44 rings have strictly positive shoelace area ($> 0$).
-  - Vertex coordinates: 100% of the 8,148 vertices lie within $[69.0, 76.5]^\circ\text{E}$ and $[27.0, 35.5]^\circ\text{N}$.
-  - Centroid containment: All 41 centroids lie within or immediately bounded by their respective polygon bounding boxes.
-- Dictionary congruence: `districts_dict.json` matches `districts.json` key-for-key across all 41 districts.
+**Command**:
+```powershell
+python tests/challenge_contrast.py
+```
 
-### 1.4 Baseline Data Continuity Verification
-Inspected `data/baseline/baseline_data.json` and cross-referenced with `window.DATA`:
-- Temporal continuity: Exactly 216 hours spanning `2026-11-01 00:00` to `2026-11-09 23:00`.
-- Strict monotonicity: $t_{i+1} - t_i = \text{timedelta(hours=1)}$ for all $i \in [0, 214]$. Zero gaps, zero duplicate timestamps.
-- Multi-pollutant completeness: All 9 pollutants (`AQI`, `PM10`, `PM2.5`, `NO2`, `SO2`, `CO`, `O3`, `NO`, `NOX`) are present.
-  - Each pollutant contains exactly 216 hourly frames.
-  - Each frame contains a dictionary `c` with exactly 41 district values (total 8,856 observations per pollutant).
-  - All values are non-negative and $\le 5,000$ or `null` (representing non-reporting monitoring intervals).
-  - Each pollutant contains a `series` array of 216 items, each containing `[inflow, outflow]` pairs of non-negative floats.
-- Wind field frames: Exactly 216 hourly frames, each containing 41 district wind vectors $[u, v]$. Maximum vector wind speed is $4.72\text{ m/s}$ (meteorologically sound).
-- Airport wind series: Exactly 6 airports (`OPLA`, `OPFA`, `OPMT`, `OPST`, `OPIS`, `VIAR`), each with 216 hourly $u$ and $v$ components.
-- Transboundary geometry: Exactly 24 border districts and 39 normal vector sample nodes (all unit vectors with magnitude $1.0 \pm 0.05$).
+**Verbatim Output**:
+```text
+================================================================================
+ 1. EMPIRICAL WCAG 2.1 AAA CONTRAST RATIO VERIFICATION (src/styles/tokens.css)
+================================================================================
 
-### 1.5 Automated Validation Executions
-1. Custom 47-point empirical validation harness `scripts/run_m1_adversarial_validation.py`:
+--- DARK MODE MATRIX (Required: CR >= 7.000:1) ---
+  --bg-canvas          (#0f1716, L=0.00772) vs --ink-primary    (#e3ece9, L=0.82205) -> CR: 15.108:1 -> PASS AAA
+  --bg-canvas          (#0f1716, L=0.00772) vs --ink-secondary  (#c0cfcb, L=0.60144) -> CR: 11.286:1 -> PASS AAA
+  --bg-canvas          (#0f1716, L=0.00772) vs --ink-tertiary   (#a8bbb5, L=0.47202) -> CR:  9.044:1 -> PASS AAA
+  --bg-canvas          (#0f1716, L=0.00772) vs --accent         (#5fc4c4, L=0.45898) -> CR:  8.818:1 -> PASS AAA
+  --bg-panel           (#152120, L=0.01351) vs --ink-primary    (#e3ece9, L=0.82205) -> CR: 13.730:1 -> PASS AAA
+  --bg-panel           (#152120, L=0.01351) vs --ink-secondary  (#c0cfcb, L=0.60144) -> CR: 10.257:1 -> PASS AAA
+  --bg-panel           (#152120, L=0.01351) vs --ink-tertiary   (#a8bbb5, L=0.47202) -> CR:  8.219:1 -> PASS AAA
+  --bg-panel           (#152120, L=0.01351) vs --accent         (#5fc4c4, L=0.45898) -> CR:  8.014:1 -> PASS AAA
+  --bg-panel-elevated  (#1c2b2a, L=0.02142) vs --ink-primary    (#e3ece9, L=0.82205) -> CR: 12.211:1 -> PASS AAA
+  --bg-panel-elevated  (#1c2b2a, L=0.02142) vs --ink-secondary  (#c0cfcb, L=0.60144) -> CR:  9.122:1 -> PASS AAA
+  --bg-panel-elevated  (#1c2b2a, L=0.02142) vs --ink-tertiary   (#a8bbb5, L=0.47202) -> CR:  7.309:1 -> PASS AAA
+  --bg-panel-elevated  (#1c2b2a, L=0.02142) vs --accent         (#5fc4c4, L=0.45898) -> CR:  7.127:1 -> PASS AAA
+  --bg-dock            (#131e1d, L=0.01156) vs --ink-primary    (#e3ece9, L=0.82205) -> CR: 14.167:1 -> PASS AAA
+  --bg-dock            (#131e1d, L=0.01156) vs --ink-secondary  (#c0cfcb, L=0.60144) -> CR: 10.583:1 -> PASS AAA
+  --bg-dock            (#131e1d, L=0.01156) vs --ink-tertiary   (#a8bbb5, L=0.47202) -> CR:  8.480:1 -> PASS AAA
+  --bg-dock            (#131e1d, L=0.01156) vs --accent         (#5fc4c4, L=0.45898) -> CR:  8.268:1 -> PASS AAA
+  --bg-inspector       (#152120, L=0.01351) vs --ink-primary    (#e3ece9, L=0.82205) -> CR: 13.730:1 -> PASS AAA
+  --bg-inspector       (#152120, L=0.01351) vs --ink-secondary  (#c0cfcb, L=0.60144) -> CR: 10.257:1 -> PASS AAA
+  --bg-inspector       (#152120, L=0.01351) vs --ink-tertiary   (#a8bbb5, L=0.47202) -> CR:  8.219:1 -> PASS AAA
+  --bg-inspector       (#152120, L=0.01351) vs --accent         (#5fc4c4, L=0.45898) -> CR:  8.014:1 -> PASS AAA
+  --bg-command-bar     (#111a19, L=0.00928) vs --ink-primary    (#e3ece9, L=0.82205) -> CR: 14.710:1 -> PASS AAA
+  --bg-command-bar     (#111a19, L=0.00928) vs --ink-secondary  (#c0cfcb, L=0.60144) -> CR: 10.989:1 -> PASS AAA
+  --bg-command-bar     (#111a19, L=0.00928) vs --ink-tertiary   (#a8bbb5, L=0.47202) -> CR:  8.806:1 -> PASS AAA
+  --bg-command-bar     (#111a19, L=0.00928) vs --accent         (#5fc4c4, L=0.45898) -> CR:  8.586:1 -> PASS AAA
+  --bg-scrubber        (#111a19, L=0.00928) vs --ink-primary    (#e3ece9, L=0.82205) -> CR: 14.710:1 -> PASS AAA
+  --bg-scrubber        (#111a19, L=0.00928) vs --ink-secondary  (#c0cfcb, L=0.60144) -> CR: 10.989:1 -> PASS AAA
+  --bg-scrubber        (#111a19, L=0.00928) vs --ink-tertiary   (#a8bbb5, L=0.47202) -> CR:  8.806:1 -> PASS AAA
+  --bg-scrubber        (#111a19, L=0.00928) vs --accent         (#5fc4c4, L=0.45898) -> CR:  8.586:1 -> PASS AAA
+
+--- LIGHT MODE MATRIX (Required: CR >= 7.000:1) ---
+  --bg-canvas          (#eef1ef, L=0.87320) vs --ink-primary    (#17221f, L=0.01425) -> CR: 14.369:1 -> PASS AAA
+  --bg-canvas          (#eef1ef, L=0.87320) vs --ink-secondary  (#34423e, L=0.04974) -> CR:  9.256:1 -> PASS AAA
+  --bg-canvas          (#eef1ef, L=0.87320) vs --ink-tertiary   (#3d4c48, L=0.06629) -> CR:  7.939:1 -> PASS AAA
+  --bg-canvas          (#eef1ef, L=0.87320) vs --accent         (#084e51, L=0.06094) -> CR:  8.321:1 -> PASS AAA
+  --bg-panel           (#fbfcfb, L=0.97095) vs --ink-primary    (#17221f, L=0.01425) -> CR: 15.890:1 -> PASS AAA
+  --bg-panel           (#fbfcfb, L=0.97095) vs --ink-secondary  (#34423e, L=0.04974) -> CR: 10.236:1 -> PASS AAA
+  --bg-panel           (#fbfcfb, L=0.97095) vs --ink-tertiary   (#3d4c48, L=0.06629) -> CR:  8.779:1 -> PASS AAA
+  --bg-panel           (#fbfcfb, L=0.97095) vs --accent         (#084e51, L=0.06094) -> CR:  9.202:1 -> PASS AAA
+  --bg-panel-elevated  (#ffffff, L=1.00000) vs --ink-primary    (#17221f, L=0.01425) -> CR: 16.342:1 -> PASS AAA
+  --bg-panel-elevated  (#ffffff, L=1.00000) vs --ink-secondary  (#34423e, L=0.04974) -> CR: 10.527:1 -> PASS AAA
+  --bg-panel-elevated  (#ffffff, L=1.00000) vs --ink-tertiary   (#3d4c48, L=0.06629) -> CR:  9.029:1 -> PASS AAA
+  --bg-panel-elevated  (#ffffff, L=1.00000) vs --accent         (#084e51, L=0.06094) -> CR:  9.464:1 -> PASS AAA
+  --bg-dock            (#e8ecea, L=0.83087) vs --ink-primary    (#17221f, L=0.01425) -> CR: 13.710:1 -> PASS AAA
+  --bg-dock            (#e8ecea, L=0.83087) vs --ink-secondary  (#34423e, L=0.04974) -> CR:  8.831:1 -> PASS AAA
+  --bg-dock            (#e8ecea, L=0.83087) vs --ink-tertiary   (#3d4c48, L=0.06629) -> CR:  7.575:1 -> PASS AAA
+  --bg-dock            (#e8ecea, L=0.83087) vs --accent         (#084e51, L=0.06094) -> CR:  7.940:1 -> PASS AAA
+  --bg-inspector       (#fbfcfb, L=0.97095) vs --ink-primary    (#17221f, L=0.01425) -> CR: 15.890:1 -> PASS AAA
+  --bg-inspector       (#fbfcfb, L=0.97095) vs --ink-secondary  (#34423e, L=0.04974) -> CR: 10.236:1 -> PASS AAA
+  --bg-inspector       (#fbfcfb, L=0.97095) vs --ink-tertiary   (#3d4c48, L=0.06629) -> CR:  8.779:1 -> PASS AAA
+  --bg-inspector       (#fbfcfb, L=0.97095) vs --accent         (#084e51, L=0.06094) -> CR:  9.202:1 -> PASS AAA
+  --bg-command-bar     (#f4f6f5, L=0.91737) vs --ink-primary    (#17221f, L=0.01425) -> CR: 15.056:1 -> PASS AAA
+  --bg-command-bar     (#f4f6f5, L=0.91737) vs --ink-secondary  (#34423e, L=0.04974) -> CR:  9.699:1 -> PASS AAA
+  --bg-command-bar     (#f4f6f5, L=0.91737) vs --ink-tertiary   (#3d4c48, L=0.06629) -> CR:  8.319:1 -> PASS AAA
+  --bg-command-bar     (#f4f6f5, L=0.91737) vs --accent         (#084e51, L=0.06094) -> CR:  8.719:1 -> PASS AAA
+  --bg-scrubber        (#f4f6f5, L=0.91737) vs --ink-primary    (#17221f, L=0.01425) -> CR: 15.056:1 -> PASS AAA
+  --bg-scrubber        (#f4f6f5, L=0.91737) vs --ink-secondary  (#34423e, L=0.04974) -> CR:  9.699:1 -> PASS AAA
+  --bg-scrubber        (#f4f6f5, L=0.91737) vs --ink-tertiary   (#3d4c48, L=0.06629) -> CR:  8.319:1 -> PASS AAA
+  --bg-scrubber        (#f4f6f5, L=0.91737) vs --accent         (#084e51, L=0.06094) -> CR:  8.719:1 -> PASS AAA
+
+--- MATRIX SUMMARY ---
+  Total surface/text pairs tested: 56 (28 dark + 28 light)
+  Dark mode minimum CR:  7.1268:1 (--bg-panel-elevated vs --accent)
+  Light mode minimum CR: 7.5749:1 (--bg-dock vs --ink-tertiary)
+  All 56 pairs meet WCAG 2.1 AAA (>= 7.000:1): True
+
+================================================================================
+ 2. BANNED DEPENDENCY AUDIT (tailwindcss, lucide-react, heroicons, feather-icons)
+================================================================================
+  Banned items detected: 0
+  VERIFIED: Zero banned dependencies present in package.json, package-lock.json, or node_modules.
+
+================================================================================
+ FINAL CHALLENGE RESULT: ALL EMPIRICAL CHECKS PASSED
+================================================================================
 ```
-=== EMPIRICAL CHALLENGE RESULTS ===
-Total checks: 47
-Passed: 47
-Failed: 0
-FINAL VERDICT: CONFIRM
-```
-2. M1 Adversarial Pytest suites (`tests/unit/test_m1_adversarial.py` and `tests/unit/test_m1_adversarial_challenge.py`):
-```
-python -m pytest tests/unit/test_m1_adversarial.py tests/unit/test_m1_adversarial_challenge.py -v
-======================== 33 passed, 1 warning in 1.16s ========================
-```
-3. Full repository test runner (`tests/`):
-```
-python -m pytest tests/ -v
-======================== 92 passed, 1 warning in 1.41s ========================
-```
+
+### 1.2 Independent Build & Typecheck Verifications
+- **TypeScript Typecheck**:
+  Command: `npm run typecheck` (`tsc --noEmit`)
+  Result: Exit code 0 (zero errors).
+- **Vite Bundler Production Build**:
+  Command: `npm run build` (`tsc && vite build`)
+  Result: Exit code 0 (`built in 1.67s`), clean `dist/` artifacts generated with separate chunks for `react-vendor` (133.99 kB), `deckgl-vendor` (6.89 kB), `maplibre-vendor` (0.05 kB), and main entry (6.33 kB).
+- **Backend Non-Regression Suite**:
+  Command: `python tests/e2e/run_all_tests.py`
+  Result: 50/50 tests passed (100%) in 2.038s.
 
 ---
 
 ## 2. Logic Chain
 
-1. **Premise**: Milestone M1 requires non-destructive relocation of legacy artifacts (`index.html`, `collector/`) to `original System/` while preserving root specifications (`docs/`, `.agents/`).
-   - *Observation*: File searches confirmed no `index.html` or `collector/` at root or in subdirectories outside `original System/`. `docs/` and `.agents/` remain preserved.
-   - *Conclusion*: Archival integrity is verified with 0 remnants.
+1. **Premise 1 (WCAG 2.1 AAA Mathematical Requirement)**:
+   - Observation: In `src/styles/tokens.css`, all 7 dark surfaces have luminance $L \le 0.02142$ (highest: `--bg-panel-elevated` at $0.02142$). Dark mode text tokens have luminance $L \ge 0.45898$ (lowest: `--accent: #5fc4c4` at $0.45898$, followed by `--ink-tertiary: #a8bbb5` at $0.47202$).
+   - Calculation: Dark worst-case contrast ratio is $\frac{0.45898 + 0.05}{0.02142 + 0.05} = \frac{0.50898}{0.07142} = 7.1268:1$. Because $7.1268 \ge 7.000$, all dark mode combinations satisfy WCAG AAA.
+   - Observation: In light mode, surfaces have luminance $L \ge 0.83087$ (lowest: `--bg-dock` at $0.83087$). Light text tokens have luminance $L \le 0.06629$ (highest: `--ink-tertiary: #3d4c48` at $0.06629$, followed by `--accent: #084e51` at $0.06094$).
+   - Calculation: Light worst-case contrast ratio is $\frac{0.83087 + 0.05}{0.06629 + 0.05} = \frac{0.88087}{0.11629} = 7.5749:1$. Because $7.5749 \ge 7.000$, all light mode combinations satisfy WCAG AAA.
+   - Conclusion: Mathematical proof holds across all 56 surface-to-text pairs without exception.
 
-2. **Premise**: Milestone M1 requires exactly 79 stations with valid unique IDs, distinct coordinates, and boundaries within $[27.0, 35.5]^\circ\text{N}$, $[69.0, 76.5]^\circ\text{E}$.
-   - *Observation*: 79 stations extracted, 79 unique IDs, 79 unique names, coordinates span $[28.423, 33.905]^\circ\text{N}$ and $[70.318, 75.090]^\circ\text{E}$, 0 spatial duplicates, aliases match, mobile/fixed partition verified (5/74).
-   - *Conclusion*: Station catalog integrity is verified with 0 defects.
+2. **Premise 2 (Zero Banned Dependencies)**:
+   - Direct query of `package.json`, `package-lock.json`, and recursive traversal of all 196 package directories in `node_modules` confirmed 0 traces of `tailwindcss`, `lucide-react`, `heroicons`, `feather-icons`, or any vendor variant.
+   - Conclusion: The dependency tree is 100% compliant with the architectural ban.
 
-3. **Premise**: Milestone M1 requires 41 districts with valid closed boundary polygons, non-empty stations, and centroid validity.
-   - *Observation*: 41 districts extracted, 44 closed rings with 8,148 vertices, all vertices in bounds, all rings have non-zero area, all districts have $\ge 1$ station, sum of stations is 79, centroids are inside/near boundaries.
-   - *Conclusion*: District boundary and topology integrity is verified with 0 defects.
-
-4. **Premise**: Milestone M1 requires 216 continuous baseline hours without gaps or corruption across all 9 pollutants.
-   - *Observation*: 216 hourly timestamps verified from `2026-11-01 00:00` to `2026-11-09 23:00` with strict 1-hour deltas; all 9 pollutants contain 216 frames of 41 districts; wind fields, airports, and transboundary geometries verified; 100% zero-drift parity against raw `window.DATA`.
-   - *Conclusion*: Baseline continuity and multi-pollutant integrity is verified with 0 defects.
-
----
-
-## 3. Caveats
-
-- **Station 25 Location**: As observed in the legacy `window.DATA['skipped']`, "OneNetwork Station 25" had an unmapped location in the original system. It is preserved in the skipped catalog in `baseline_data.json` and does not affect the 79 active stations.
-- **Tehsil Coordinates**: 24 tehsil stations in newly integrated districts use town-center reference coordinates as documented in `coordsrc`, which is authentic to the legacy system.
-- No caveats compromise the verification verdict.
+3. **Premise 3 (Tooling & Architecture Stability)**:
+   - `npm run typecheck` and `npm run build` verify strict TypeScript conformance (`target: ES2022`, `types: ["vite/client"]`) and bundling stability.
+   - 50/50 backend E2E tests pass in 2.038 seconds, proving no regression of API routes or baseline data contracts.
 
 ---
 
-## 4. Conclusion
+## 3. Adversarial Challenges & Findings
 
-Milestone M1 is **CONFIRMED** (`CONFIRM`).
-All empirical checks, boundary constraints, and continuity verifications passed without error. The workspace is archived cleanly, and the baseline datasets are robust, uncorrupted, and ready for downstream milestones (M2 through M6).
+### Challenge Summary
+**Overall Risk Assessment**: **LOW**
+
+### Challenge 1 (Medium Severity — Advisory for Milestone 4)
+- **Assumption challenged**: Can statutory PEPC color chips (`--pepc-unhealthy: #FF0000`, `--pepc-hazardous: #C00000`) support embedded text meeting WCAG 2.1 AAA ($\ge 7.0:1$)?
+- **Attack scenario**: An engineer in Milestone 4 places text directly inside a filled red badge (`background-color: var(--pepc-unhealthy); color: var(--pepc-unhealthy-ink)`).
+- **Empirical evidence**:
+  Pure sRGB red (`#FF0000`) has a relative luminance of $L = 0.2126 \times 1.0 = 0.2126$.
+  - Against pure white (`#ffffff`, $L=1.0$): $CR = \frac{1.05}{0.2626} = \mathbf{3.998:1}$ (fails AA 4.5:1).
+  - Against pure black (`#000000`, $L=0.0$): $CR = \frac{0.2626}{0.05} = \mathbf{5.252:1}$ (passes AA 4.5:1, but fails AAA 7.0:1).
+  Neither white nor black text can mathematically reach 7.0:1 inside a solid `#FF0000` fill.
+  For `--pepc-hazardous` (`#C00000`, $L=0.1119$):
+  - Against white (`#ffffff`): $CR = \frac{1.05}{0.1619} = \mathbf{6.479:1}$ (passes AA 4.5:1, but drops below AAA 7.0:1).
+- **Blast radius**: Does not invalidate Milestone 1 (where PEPC tokens are statutory palette references for cartographic map polygons and indicators), but could introduce accessibility violations in Milestone 4 if text is rendered inside solid red badge fills.
+- **Mitigation for Milestone 4**: When rendering statutory PEPC badges in the Command Bar or Inspector, use color indicator swatches/squares beside panel text (where text sits on `--bg-panel` at $\ge 8.2:1$), or use outline borders with standard panel backgrounds, rather than small text inside solid red fills.
+
+### Stress Test Results Table
+| Scenario | Expected Behavior | Actual Behavior | Result |
+|---|---|---|---|
+| Dark mode 7 surfaces x 4 inks (28 pairs) | $CR \ge 7.000:1$ | Minimum $CR = 7.127:1$ (`--bg-panel-elevated` vs `--accent`) | **PASS** |
+| Light mode 7 surfaces x 4 inks (28 pairs) | $CR \ge 7.000:1$ | Minimum $CR = 7.575:1$ (`--bg-dock` vs `--ink-tertiary`) | **PASS** |
+| Banned packages in `package.json` | 0 occurrences | 0 found | **PASS** |
+| Banned packages in `package-lock.json` | 0 occurrences | 0 found | **PASS** |
+| Banned packages in `node_modules` tree | 0 directories | 0 found | **PASS** |
+| Emojis in new M1 files | 0 Unicode emojis | 0 found | **PASS** |
+| TypeScript strict type check | Code 0, 0 errors | Code 0, 0 errors | **PASS** |
+| Vite production build | Code 0, valid dist/ | Code 0, dist/ built in 1.67s | **PASS** |
+| Backend E2E regression suite | 50/50 passed | 50/50 passed in 2.038s | **PASS** |
 
 ---
 
-## 5. Verification Method
+## 4. Caveats
 
-To independently reproduce and verify this verdict, execute the following commands from the repository root:
+1. **MapLibre & Deck.gl Runtime Initialization**:
+   In Milestone 1, `src/App.tsx` establishes the structural DOM containers (`#mapLibreCanvas`, `#deckOverlay`). Active WebGL context initialization and layer lifecycle management are scoped for Milestone 3.
+2. **Legacy Static Mount**:
+   `src/api/main.py` continues serving legacy `dashboard.html` for E2E tests until Milestone 5 wires root serving to `dist/`.
 
-```powershell
-# 1. Run the comprehensive 47-point empirical validation harness:
-python scripts/run_m1_adversarial_validation.py
+---
 
-# 2. Run the M1 adversarial unit test suites:
-python -m pytest tests/unit/test_m1_adversarial.py tests/unit/test_m1_adversarial_challenge.py -v
+## 5. Conclusion & Final Verdict
 
-# 3. Run the full pytest test suite:
-python -m pytest tests/ -v
-```
+**Verdict**: **APPROVE**
 
-**Invalidation Conditions**:
-- Any of the 47 empirical checks in `scripts/run_m1_adversarial_validation.py` fails.
-- Any test in `tests/unit/test_m1_adversarial.py` or `tests/unit/test_m1_adversarial_challenge.py` fails.
-- Legacy artifacts are detected outside `original System/`.
-- Station count $\ne 79$, district count $\ne 41$, or baseline hours count $\ne 216$.
+Milestone 1 satisfies all functional, architectural, and mathematical constraints:
+1. Every surface/text pair in `src/styles/tokens.css` exceeds WCAG 2.1 AAA luminance contrast ($\ge 7.000:1$) under rigorous empirical testing.
+2. Complete absence of banned dependencies (`tailwindcss`, `lucide-react`, `heroicons`, `feather-icons`) across direct, lockfile, and transitive trees.
+3. Clean TypeScript compilation and Vite production build.
+4. Rigid 100vw x 100vh CSS Grid layout shell with semantic landmark roles and zero emojis.
+5. 100% non-regression on backend E2E tests (50/50 passing).
+
+---
+
+## 6. Verification Method
+
+To independently reproduce the empirical findings:
+
+1. **Run the Empirical Contrast & Banned Dependency Harness**:
+   ```powershell
+   python tests/challenge_contrast.py
+   ```
+   *Expected outcome*: Exits 0, reporting `All 56 pairs meet WCAG 2.1 AAA (>= 7.000:1): True` and `VERIFIED: Zero banned dependencies present`.
+
+2. **Execute TypeScript Typecheck**:
+   ```powershell
+   npm run typecheck
+   ```
+   *Expected outcome*: Exits with code 0 and zero compilation errors.
+
+3. **Execute Production Bundler Build**:
+   ```powershell
+   npm run build
+   ```
+   *Expected outcome*: Exits with code 0 and produces `dist/index.html` and chunks in < 3 seconds.
+
+4. **Execute Backend E2E Regression Suite**:
+   ```powershell
+   python tests/e2e/run_all_tests.py
+   ```
+   *Expected outcome*: 50/50 tests pass in < 3 seconds with 100% success rate.
+
+5. **Invalidation Conditions**:
+   - Any surface/text combination in `tokens.css` yielding $CR < 7.000:1$.
+   - Any appearance of `tailwindcss`, `lucide-react`, `heroicons`, or `feather-icons` in dependency manifests.
+   - Any failure in `npm run typecheck`, `npm run build`, or `tests/e2e/run_all_tests.py`.

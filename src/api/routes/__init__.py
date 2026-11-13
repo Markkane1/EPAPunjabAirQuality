@@ -1,6 +1,7 @@
 """API Route modules for Punjab Air Quality system."""
 from src.api.routes import (
     analytics,
+    epa,
     ingest,
     meta,
     observations,
@@ -15,4 +16,5 @@ __all__ = [
     "analytics",
     "ingest",
     "stream",
+    "epa",
 ]

@@ -1,0 +1,135 @@
+/* ==========================================================================
+   EPA PUNJAB AIR QUALITY WORKSTATION - TYPOGRAPHY SPECIFICATION
+   Exclusively IBM Plex Sans | IBM Plex Sans Condensed | IBM Plex Mono
+   Strict Tabular-Nums Formatting | Zero Emojis Enforced
+   ========================================================================== */
+
+:root {
+  --font-body: "IBM Plex Sans", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+  --font-condensed: "IBM Plex Sans Condensed", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+  --font-mono: "IBM Plex Mono", "SFMono-Regular", Menlo, Monaco, Consolas, monospace;
+}
+
+/* ==========================================
+   Global Base Typography & Anti-Aliasing
+   ========================================== */
+html {
+  font-family: var(--font-body);
+  font-size: 13px;
+  line-height: 1.45;
+  color: var(--ink-primary);
+  background-color: var(--bg-canvas);
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  text-rendering: optimizeLegibility;
+}
+
+body {
+  font-family: var(--font-body);
+  color: var(--ink-primary);
+  background-color: var(--bg-canvas);
+  margin: 0;
+  padding: 0;
+  overflow: hidden; /* Rigid 100vw x 100vh Workstation Layout */
+}
+
+/* ==========================================
+   Tabular-Nums Enforcement (Mandatory)
+   ========================================== */
+.tabular-nums,
+.num,
+.metric,
+.telemetry-val,
+.coordinate,
+.timestamp,
+.station-code,
+table td.numeric,
+input[type="number"] {
+  font-family: var(--font-mono);
+  font-variant-numeric: tabular-nums;
+  font-feature-settings: "tnum" 1, "zero" 1;
+}
+
+/* ==========================================
+   Typographic Scale Classes
+   ========================================== */
+
+/* Display Header: Workstation title & major alert banners */
+.display-header {
+  font-family: var(--font-body);
+  font-size: 20px;
+  line-height: 24px;
+  font-weight: 700;
+  letter-spacing: -0.01em;
+  color: var(--ink-primary);
+}
+
+/* Section Header: Dock titles, inspector panels, drawer headings */
+.section-header {
+  font-family: var(--font-condensed);
+  font-size: 14px;
+  line-height: 18px;
+  font-weight: 600;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: var(--ink-secondary);
+}
+
+/* Component Label: Toolbar buttons, select boxes, table headers */
+.component-label {
+  font-family: var(--font-body);
+  font-size: 12px;
+  line-height: 16px;
+  font-weight: 600;
+  letter-spacing: 0.02em;
+  color: var(--ink-secondary);
+}
+
+/* Body Scientific: Qualitative analysis, methodology text, notes */
+.body-scientific {
+  font-family: var(--font-body);
+  font-size: 13px;
+  line-height: 18px;
+  font-weight: 400;
+  color: var(--ink-primary);
+}
+
+/* Data Dense Matrix / Tables / Compact Chips */
+.dense-data,
+.data-chip,
+.ranking-cell {
+  font-family: var(--font-condensed);
+  font-size: 12px;
+  line-height: 15px;
+  font-weight: 500;
+  color: var(--ink-primary);
+}
+
+/* Telemetry Readout: Live concentrations, scalars, wind vector magnitudes */
+.telemetry-value {
+  font-family: var(--font-mono);
+  font-size: 16px;
+  line-height: 20px;
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+  color: var(--ink-primary);
+}
+
+/* Caption / Coordinate / Ticks: Map axes, timestamps, lat/lon */
+.caption-tick {
+  font-family: var(--font-mono);
+  font-size: 10px;
+  line-height: 13px;
+  font-weight: 400;
+  font-variant-numeric: tabular-nums;
+  letter-spacing: 0.03em;
+  color: var(--ink-tertiary);
+}
+
+/* ==========================================
+   Strict Absence of Emojis
+   ========================================== */
+/* Emoji font fallbacks (Apple Color Emoji, Segoe UI Emoji, Noto Color Emoji)
+   are intentionally omitted from all font-family definitions above.
+   Institutional standards mandate inline SVG icons (1.25px stroke) and deck.gl
+   geometry glyphs exclusively. */

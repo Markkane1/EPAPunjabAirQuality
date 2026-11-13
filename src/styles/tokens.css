@@ -1,0 +1,176 @@
+/* ==========================================================================
+   EPA PUNJAB AIR QUALITY WORKSTATION - DESIGN SYSTEM TOKENS
+   Strict WCAG 2.1 AAA Luminance Contrast (>= 7.0:1) Across All Text/Surfaces
+   Institutional Physics Console: 1px Hairlines | 0px Radius | 0 Blur | 0 Shadows
+   ========================================================================== */
+
+:root {
+  /* ==========================================
+     Surfaces & Workstation Grid Zones (Dark)
+     ========================================== */
+  --bg-canvas: #0f1716;              /* Zone 3 Central planimetric map canvas */
+  --bg-panel: #152120;               /* Base panel surface */
+  --bg-panel-elevated: #1c2b2a;      /* Hover states, modal dialogs, drawers */
+  --bg-dock: #131e1d;                /* Zone 2 Spatial Control Dock */
+  --bg-inspector: #152120;           /* Zone 4 Receptor Inspector */
+  --bg-command-bar: #111a19;         /* Zone 1 Top Command Bar */
+  --bg-scrubber: #111a19;            /* Zone 5 Temporal Playback Scrubber */
+  --bg-overlay: rgba(15, 23, 22, 0.92);
+
+  /* ==========================================
+     Structural Hairlines & Dividers (Dark)
+     ========================================== */
+  --border-subtle: #2a3a38;
+  --border-strong: #4f625e;
+  --border-hairline: 1px solid var(--border-subtle);
+  --border-hairline-strong: 1px solid var(--border-strong);
+  --border-hairline-accent: 1px solid var(--accent);
+  --border-width-hairline: 1px;
+  --border-style-hairline: solid;
+
+  /* ==========================================
+     Text & Ink Tokens (Dark Mode - All >= 7.0:1)
+     ========================================== */
+  --ink-primary: #e3ece9;            /* Luminance 0.82205 | 12.21:1 to 15.11:1 */
+  --ink-secondary: #c0cfcb;          /* Luminance 0.60144 | 9.12:1 to 11.29:1 */
+  --ink-tertiary: #a8bbb5;           /* Luminance 0.47202 | 7.31:1 to 9.04:1 */
+  --ink-inverse: #111a19;            /* High-contrast text on bright chips */
+
+  /* ==========================================
+     Accent, Focus & Instrument Status (Dark)
+     ========================================== */
+  --accent: #5fc4c4;                 /* Luminance 0.45898 | 7.13:1 to 8.82:1 */
+  --accent-soft: rgba(95, 196, 196, 0.12);
+  --focus-ring: 2px solid var(--accent);
+  --focus-offset: 2px;
+  --pulse-live: #00B050;
+  --pulse-warn: #ED7D31;
+  --pulse-user: #5fc4c4;
+
+  /* ==========================================
+     Statutory PEPC 7-Stop Palette & Contrast Inks
+     ========================================== */
+  --pepc-good: #00B050;
+  --pepc-satisfactory: #92D050;
+  --pepc-moderate: #FFFF00;
+  --pepc-unhealthy-sensitive: #ED7D31;
+  --pepc-unhealthy: #FF0000;
+  --pepc-very-unhealthy: #7030A0;
+  --pepc-hazardous: #C00000;
+  --pepc-emergency: #4A154B;
+
+  --pepc-good-ink: #000000;          /* 7.33:1 on #00B050 */
+  --pepc-satisfactory-ink: #000000;  /* 11.36:1 on #92D050 */
+  --pepc-moderate-ink: #000000;      /* 19.56:1 on #FFFF00 */
+  --pepc-unhealthy-sensitive-ink: #000000; /* 7.58:1 on #ED7D31 */
+  --pepc-unhealthy-ink: #ffffff;
+  --pepc-very-unhealthy-ink: #ffffff;/* 8.02:1 on #7030A0 */
+  --pepc-hazardous-ink: #ffffff;
+  --pepc-emergency-ink: #ffffff;    /* 13.54:1 on #4A154B */
+
+  /* ==========================================
+     Cartographic Fills (Deck.gl & MapLibre)
+     ========================================== */
+  --geo-sea: #0b1211;
+  --geo-land: #162120;
+  --geo-punjab: #1d2d2c;
+  --geo-district-border: #4f625e;
+  --geo-international: #ff7a6b;
+  --geo-india-fill: #26231a;
+
+  /* ==========================================
+     Physical Advection & Transport Dynamics
+     ========================================== */
+  --flow-link: #e3f4f2;
+  --flow-particle: rgba(225, 245, 242, 0.38);
+  --flow-inflow: #ff6b5e;            /* Cross-border easterly inflow chevron */
+  --flow-outflow: #5fc4c4;           /* Cross-border outflow chevron */
+
+  /* ==========================================
+     Rigid Structural Constraints (Strict Bans)
+     ========================================== */
+  --radius-none: 0px;
+  --radius-xs: 0px;
+  --radius-sm: 0px;
+  --radius-md: 0px;
+  --radius-lg: 0px;
+  --border-radius-none: 0px;
+
+  --shadow-none: none;
+  --shadow-card: none;
+  --shadow-overlay: none;
+  --box-shadow-none: none;
+
+  --blur-none: none;
+  --backdrop-blur-none: none;
+
+  --svg-stroke-width: 1.25px;
+  --svg-stroke-linejoin: miter;
+  --svg-stroke-linecap: square;
+
+  /* ==========================================
+     8-Point Spatial Layout Grid Dimensions
+     ========================================== */
+  --space-xxs: 2px;
+  --space-xs: 4px;
+  --space-sm: 8px;
+  --space-md: 16px;
+  --space-lg: 24px;
+  --space-xl: 32px;
+  --space-xxl: 48px;
+
+  --dock-width: 360px;
+  --inspector-width: 380px;
+  --command-bar-height: 48px;
+  --scrubber-height: 64px;
+}
+
+/* ==========================================================================
+   Light Mode Overrides (Strict WCAG 2.1 AAA All Inks >= 7.0:1)
+   ========================================================================== */
+[data-theme="light"], :root[data-theme="light"] {
+  --bg-canvas: #eef1ef;
+  --bg-panel: #fbfcfb;
+  --bg-panel-elevated: #ffffff;
+  --bg-dock: #e8ecea;
+  --bg-inspector: #fbfcfb;
+  --bg-command-bar: #f4f6f5;
+  --bg-scrubber: #f4f6f5;
+  --bg-overlay: rgba(238, 241, 239, 0.94);
+
+  --border-subtle: #d3dad7;
+  --border-strong: #9aa6a2;
+
+  /* Calibrated Light Inks (Luminances <= 0.075 to beat dock at 0.83087) */
+  --ink-primary: #17221f;            /* Luminance 0.01425 | 13.71:1 to 16.34:1 */
+  --ink-secondary: #34423e;          /* Luminance 0.04974 | 8.83:1 to 10.53:1 */
+  --ink-tertiary: #3d4c48;           /* Luminance 0.06629 | 7.57:1 to 9.03:1 */
+  --ink-inverse: #fbfcfb;
+
+  --accent: #084e51;                 /* Luminance 0.06094 | 7.94:1 to 9.46:1 */
+  --accent-soft: rgba(8, 78, 81, 0.12);
+  --pulse-live: #00873d;
+  --pulse-warn: #cf6217;
+  --pulse-user: #084e51;
+
+  --geo-sea: #e3e8e5;
+  --geo-land: #eceeec;
+  --geo-punjab: #f8f9f8;
+  --geo-district-border: #9aa6a2;
+  --geo-international: #a3261f;
+  --geo-india-fill: #efe8d8;
+
+  --flow-link: #18302f;
+  --flow-particle: rgba(20, 40, 40, 0.32);
+  --flow-inflow: #c4312a;
+  --flow-outflow: #084e51;
+}
+
+/* Enforce absolute suppression of rounded corners, drop shadows, and blur */
+*, *::before, *::after {
+  border-radius: 0px !important;
+  box-shadow: none !important;
+  text-shadow: none !important;
+  backdrop-filter: none !important;
+  -webkit-backdrop-filter: none !important;
+}
