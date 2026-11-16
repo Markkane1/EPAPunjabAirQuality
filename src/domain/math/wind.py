@@ -17,6 +17,7 @@ CALM_WIND_THRESHOLD_MS: float = 0.5  # Aerodynamic calm cutoff
 # Stations with persistent mechanical/sensor offsets blacklisted from wind analysis
 # Wazirabad AQMS anemometer has an uncalibrated 140 degree hardware vane offset
 WIND_BLACKLIST_STATIONS: Set[str] = {
+    "172",
     "wazirabad",
     "wazirabad aqms",
     "pk_waz_001",
@@ -24,13 +25,16 @@ WIND_BLACKLIST_STATIONS: Set[str] = {
 }
 
 
-def is_station_blacklisted(station_name: Optional[str]) -> bool:
+def is_station_blacklisted(station_name: Optional[Any]) -> bool:
     """
     Checks if a station is blacklisted for wind measurements (e.g. Wazirabad).
+    Handles string names, numeric IDs, integer types, and whitespace.
     """
-    if not station_name:
+    if station_name is None:
         return False
-    normalized = station_name.strip().lower()
+    normalized = str(station_name).strip().lower()
+    if not normalized:
+        return False
     if normalized in WIND_BLACKLIST_STATIONS:
         return True
     return "wazirabad" in normalized

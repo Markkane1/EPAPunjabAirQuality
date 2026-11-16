@@ -45,7 +45,7 @@
         <button type="button" class="nav-tab-btn" role="tab" aria-selected="false" data-view="lahore">Lahore Focus</button>
         <button type="button" class="nav-tab-btn" role="tab" aria-selected="false" data-view="heatmap">Hourly Heatmap</button>
         <button type="button" class="nav-tab-btn" role="tab" aria-selected="false" data-view="transboundary">Transboundary</button>
-        <button type="button" class="nav-tab-btn" role="tab" aria-selected="false" data-view="fires">🔥 Fire Archive</button>
+        <button type="button" class="nav-tab-btn" role="tab" aria-selected="false" data-view="fires">Fire Archive</button>
         <button type="button" class="nav-tab-btn" role="tab" aria-selected="false" data-view="grid">3x3 Grid</button>
       </nav>
 
@@ -101,7 +101,7 @@
             <div id="legendColorBar" class="legend-color-bar"></div>
             <div id="legendTicks" class="legend-ticks tabular-nums"></div>
             <div class="legend-footer">
-              <div>● Fixed Station · ✈ Airport METAR Wind</div>
+              <div>● Fixed Station · Airport METAR Wind</div>
               <div>
                 <span class="legend-swatch" style="background: var(--flow-inflow);"></span>Inflow from India
                 <span class="legend-swatch" style="background: var(--flow-outflow); margin-left: 6px;"></span>Outflow to India
@@ -113,7 +113,7 @@
         <!-- 216-Hour Transport Scrubber Deck -->
         <div class="scrubber-deck" role="toolbar" aria-label="Temporal Transport Scrubber Controls">
           <div class="scrubber-playback-group">
-            <button type="button" id="liveToggleBtn" class="live-mode-btn active" aria-label="Toggle Live Nowcast Mode" title="Pin view to real-time live data stream" style="background: #a33; color: #fff; font-weight: 700; padding: 4px 10px; border-radius: 3px; border: 1px solid #e55; cursor: pointer;">🔴 LIVE</button>
+            <button type="button" id="liveToggleBtn" class="live-mode-btn active" aria-label="Toggle Live Nowcast Mode" title="Pin view to real-time live data stream" style="background: #a33; color: #fff; font-weight: 700; padding: 4px 10px; border-radius: 3px; border: 1px solid #e55; cursor: pointer;"><span class="live-dot" style="display:inline-block;width:8px;height:8px;border-radius:50%;background:#fff;margin-right:4px;"></span>LIVE</button>
             <button type="button" id="playBtn" class="primary" aria-label="Play or Pause Timeline">Pause</button>
             <button type="button" id="tickBtn" class="tick-step-btn" aria-label="Advance Ingestion Pipeline 1 Hour" title="Trigger pipeline tick simulation" style="background: var(--bg-card); color: var(--accent); border: 1px solid var(--accent); padding: 4px 8px; border-radius: 3px; cursor: pointer;">+1h Tick</button>
             <input type="range" id="scrubRange" class="range-scrubber-input" min="0" max="215" step="0.01" value="0" aria-label="Timeline Transport Scrubber (Hours 0 to 215)">
@@ -167,7 +167,7 @@
         <!-- NASA FIRMS Active Fire Anomalies Card -->
         <section class="instrument-card" aria-label="NASA FIRMS Fire Anomalies">
           <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 4px;">
-            <h2>🔥 Active Fire Anomalies</h2>
+            <h2>Active Fire Anomalies</h2>
             <button type="button" id="openFireModalBtn" class="primary" style="padding: 3px 8px; font-size: 11px; cursor: pointer;">Archive ↗</button>
           </div>
           <div class="card-hint">VIIRS 375m active thermal anomalies · stubble & biomass burning</div>
@@ -282,7 +282,7 @@
           </label>
           <div id="gridZoomBanner" class="grid-zoom-banner" style="display: none;" role="status" aria-label="District Zoom Indicator">
             <span class="grid-zoom-tag">District: <strong id="gridZoomDistrictName">Lahore</strong></span>
-            <button type="button" id="gridResetZoomBtn" class="grid-reset-zoom-btn" title="Reset to Full Province View">✕ Reset View</button>
+            <button type="button" id="gridResetZoomBtn" class="grid-reset-zoom-btn" title="Reset to Full Province View">&times; Reset View</button>
           </div>
         </div>
       </div>
@@ -373,11 +373,11 @@
     <section id="panel-fires" class="deep-dive-panel instrument-card" hidden aria-label="NASA FIRMS Fire Anomalies & Historical Archive">
       <div style="display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 8px; flex-wrap: wrap; gap: 8px;">
         <div>
-          <h2 style="font-size: 20px;">🔥 NASA FIRMS VIIRS Active Fire Anomalies & Historical Archive</h2>
+          <h2 style="font-size: 20px;">NASA FIRMS VIIRS Active Fire Anomalies & Historical Archive</h2>
           <div class="card-hint">Spaceborne 375m thermal anomaly detections across Punjab & transboundary agricultural airshed</div>
         </div>
         <div style="display: flex; gap: 8px;">
-          <button type="button" class="primary" id="panelFireProjectBtn" style="background: #e65100; border-color: #ff9800;">🗺️ Project on Main Map</button>
+          <button type="button" class="primary" id="panelFireProjectBtn" style="background: #e65100; border-color: #ff9800;">Project on Main Map</button>
           <button type="button" id="panelFireExportBtn" style="background: var(--bg-card); color: var(--ink-primary); border: 1px solid var(--border-subtle); padding: 5px 12px; border-radius: 4px; cursor: pointer;">Export CSV ⬇</button>
         </div>
       </div>
@@ -533,7 +533,7 @@
     <!-- Floating HUD Fire Tooltip on Map Canvas -->
     <div id="fireHudTooltip" class="fire-hud-tooltip" style="display: none; position: fixed; z-index: 1000; pointer-events: none; background: rgba(14, 20, 20, 0.95); border: 1px solid #ff5722; border-radius: 4px; padding: 8px 12px; font-family: var(--font-mono); font-size: 11px; box-shadow: 0 4px 16px rgba(0,0,0,0.6); color: #fff;">
       <div style="font-weight: 700; color: #ff7043; font-size: 12px; display: flex; align-items: center; gap: 5px; margin-bottom: 4px;">
-        <span>🔥</span> <span>VIIRS Active Fire Anomaly</span>
+        <span style="color: #ff5722; font-weight: 900;">•</span> <span>VIIRS Active Fire Anomaly</span>
       </div>
       <div id="fireTooltipContent" style="display: grid; grid-template-columns: auto auto; gap: 3px 12px; font-size: 11px;"></div>
     </div>

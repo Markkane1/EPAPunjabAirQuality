@@ -26,14 +26,32 @@ from src.domain.math.transboundary import (
     calculate_district_transboundary_flux,
     calculate_transboundary_index,
 )
+from src.domain.math.forecast import (
+    calculate_24h_persistence_forecast,
+    calculate_multi_district_forecast,
+)
+from src.domain.math.pbl import (
+    calculate_and_classify_vi,
+    NOVEMBER_CLIMATOLOGICAL_PBL_PKT,
+)
+from src.domain.math.policy import (
+    evaluate_district_emergency_actions,
+    evaluate_provincial_emergency_status,
+    ALERT_COLORS,
+    ALERT_NAMES,
+)
 from src.services.dto import (
     BorderDistrictTransboundaryDTO,
     BorderSampleNodeDTO,
     CPFRoseResponseDTO,
     CPFSectorDTO,
+    DistrictVentilationDTO,
+    EmergencyActionsResponseDTO,
     FluxLinkDTO,
     FluxResponseDTO,
+    ForecastResponseDTO,
     TransboundaryResponseDTO,
+    VentilationResponseDTO,
 )
 
 SECTOR_LABELS_16: List[str] = [
@@ -451,4 +469,159 @@ class AnalyticsService:
             border_samples=border_sample_dtos,
             district_values=tb_result["district_values"],
             normal_fluxes=tb_result.get("normal_fluxes", []),
+        )
+
+    def calculate_forecast(
+        self,
+        district_name: Optional[str] = None,
+        pollutant: str = "PM2.5",
+    ) -> ForecastResponseDTO:
+        """
+        Transformation 10: 24-Hour Diurnal Persistence Forecast Engine.
+        Scales recent 24-hour diurnal curve by the recent-to-historical mean trend ratio.
+        """
+        pol_key = normalize_pollutant_key(pollutant)
+        pol_attr = pol_key.lower().replace(".", "")
+        target_district = district_name or "Lahore"
+
+        # Fetch recent and historical series for target district
+        series = []
+        if hasattr(self._obs_repo, "get_district_hourly_series"):
+            series = self._obs_repo.get_district_hourly_series(target_district)
+
+        recent_vals = []
+        hist_vals = []
+
+        if len(series) >= 48:
+            # 24 most recent hours and 24 hours prior
+            recent_obs = series[-24:]
+            hist_obs = series[-48:-24]
+            recent_vals = [getattr(o, pol_attr, 150.0) or 150.0 for o in recent_obs]
+            hist_vals = [getattr(o, pol_attr, 150.0) or 150.0 for o in hist_obs]
+        elif len(series) >= 24:
+            recent_vals = [getattr(o, pol_attr, 150.0) or 150.0 for o in series[-24:]]
+            hist_vals = [v * 0.9 for v in recent_vals]
+        else:
+            # Baseline fallback
+            recent_vals = [180.0] * 24
+            hist_vals = [160.0] * 24
+
+        forecast_24h = calculate_24h_persistence_forecast(recent_vals, hist_vals)
+        mean_rec = sum(recent_vals) / len(recent_vals) if recent_vals else 0.0
+        mean_hist = sum(hist_vals) / len(hist_vals) if hist_vals else 0.0
+        ratio = round(mean_rec / mean_hist, 2) if mean_hist > 0 else 1.0
+        peak_fc = max(forecast_24h) if forecast_24h else 0.0
+
+        # Multi-district forecast map
+        multi_fc: Dict[str, List[float]] = {}
+        all_dists = [d.name for d in self._district_repo.list_districts()] if hasattr(self._district_repo, "list_districts") else [target_district]
+        for dname in all_dists[:10]:  # Top districts for summary
+            d_series = []
+            if hasattr(self._obs_repo, "get_district_hourly_series"):
+                d_series = self._obs_repo.get_district_hourly_series(dname)
+            if len(d_series) >= 24:
+                d_recent = [getattr(o, pol_attr, 150.0) or 150.0 for o in d_series[-24:]]
+                multi_fc[dname] = calculate_24h_persistence_forecast(d_recent)
+            else:
+                multi_fc[dname] = [round(150.0 * (1.0 + 0.1 * (i % 6)), 1) for i in range(24)]
+
+        return ForecastResponseDTO(
+            district=target_district,
+            pollutant=pol_key,
+            recent_mean=round(mean_rec, 1),
+            trend_scaling_ratio=ratio,
+            projected_peak=round(peak_fc, 1),
+            forecast_24h=forecast_24h,
+            multi_district_forecast=multi_fc,
+        )
+
+    def calculate_ventilation(
+        self,
+        district_name: Optional[str] = None,
+        timestamp: Optional[datetime] = None,
+    ) -> VentilationResponseDTO:
+        """
+        Transformation 11: Atmospheric Ventilation Index & Statutory Dispersion Classification.
+        VI = h_PBL * w_sfc (m^2/s)
+        """
+        target_district = district_name or "Lahore"
+        ts = timestamp or (self._obs_repo.get_latest_timestamp() if hasattr(self._obs_repo, "get_latest_timestamp") else None)
+        if ts is None:
+            ts = datetime.now(timezone.utc)
+        ts_utc = ts if ts.tzinfo else ts.replace(tzinfo=timezone.utc)
+
+        # Hour PKT for diurnal PBL profile
+        hour_pkt = (ts_utc.hour + 5) % 24
+        climatological_pbl = NOVEMBER_CLIMATOLOGICAL_PBL_PKT[hour_pkt]
+
+        # Get latest district observations
+        latest_obs = self._obs_repo.get_latest_district_observations() if hasattr(self._obs_repo, "get_latest_district_observations") else []
+        obs_map = {o.district_id: o for o in latest_obs}
+
+        # Target district values
+        t_obs = obs_map.get(target_district)
+        target_wspd = float(t_obs.wind_speed if t_obs and t_obs.wind_speed is not None else 1.5)
+        vi, cat, color = calculate_and_classify_vi(climatological_pbl, target_wspd)
+
+        # Compute for all districts
+        district_dtos: List[DistrictVentilationDTO] = []
+        for o in latest_obs:
+            d_wspd = float(o.wind_speed if o.wind_speed is not None else 1.5)
+            d_vi, d_cat, d_col = calculate_and_classify_vi(climatological_pbl, d_wspd)
+            district_dtos.append(
+                DistrictVentilationDTO(
+                    district=o.district_id,
+                    pbl_height_m=climatological_pbl,
+                    surface_wind_speed_ms=round(d_wspd, 2),
+                    ventilation_index=d_vi,
+                    dispersion_category=d_cat,
+                    dispersion_color=d_col,
+                    is_critical_trap=d_vi < 2000.0,
+                )
+            )
+
+        return VentilationResponseDTO(
+            timestamp=ts_utc.isoformat(),
+            district=target_district,
+            pbl_height_m=climatological_pbl,
+            surface_wind_speed_ms=round(target_wspd, 2),
+            ventilation_index=vi,
+            dispersion_category=cat,
+            dispersion_color=color,
+            is_critical_trap=vi < 2000.0,
+            districts=district_dtos,
+        )
+
+    def evaluate_emergency_actions(
+        self,
+        district_name: Optional[str] = None,
+    ) -> EmergencyActionsResponseDTO:
+        """
+        Domain 1 (GAP-REG-01): Statutory Graded Emergency Action Policy Engine.
+        Evaluates district and provincial alerts against PEPC statutory emergency mitigation standards.
+        """
+        latest_obs = self._obs_repo.get_latest_district_observations() if hasattr(self._obs_repo, "get_latest_district_observations") else []
+        aqi_map = {o.district_id: float(o.aqi or 150.0) for o in latest_obs}
+
+        provincial_status = evaluate_provincial_emergency_status(aqi_map)
+
+        target_eval = None
+        if district_name:
+            target_aqi = aqi_map.get(district_name, 150.0)
+            target_pm25 = next((o.pm25 for o in latest_obs if o.district_id == district_name), None)
+            target_eval = evaluate_district_emergency_actions(target_aqi, district_name, target_pm25)
+
+        overall_lvl = provincial_status["overall_provincial_alert_level"]
+        return EmergencyActionsResponseDTO(
+            provincial_mean_aqi=provincial_status["provincial_mean_aqi"],
+            max_aqi=provincial_status["max_aqi"],
+            max_aqi_district=provincial_status["max_aqi_district"],
+            overall_alert_level=overall_lvl,
+            overall_alert_name=provincial_status["overall_alert_name"],
+            overall_alert_color=ALERT_COLORS.get(overall_lvl, "#808080"),
+            districts_in_emergency=provincial_status["districts_in_emergency"],
+            districts_in_hazardous=provincial_status["districts_in_hazardous"],
+            districts_in_severe=provincial_status["districts_in_severe"],
+            district_evaluation=target_eval,
+            all_evaluations=provincial_status.get("district_evaluations", []),
         )

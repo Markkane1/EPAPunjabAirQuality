@@ -268,3 +268,56 @@ class IngestionReportDTO:
             object.__setattr__(self, "quarantined_records", self.quarantine_records)
         if not self.quarantine_records and self.quarantined_records:
             object.__setattr__(self, "quarantine_records", self.quarantined_records)
+
+
+# --- Forecasting & Emergency Policy DTOs ---
+
+@dataclass(frozen=True)
+class ForecastResponseDTO:
+    district: str
+    pollutant: str
+    recent_mean: float
+    trend_scaling_ratio: float
+    projected_peak: float
+    forecast_24h: List[float] = field(default_factory=list)
+    multi_district_forecast: Dict[str, List[float]] = field(default_factory=dict)
+
+
+@dataclass(frozen=True)
+class DistrictVentilationDTO:
+    district: str
+    pbl_height_m: float
+    surface_wind_speed_ms: float
+    ventilation_index: float
+    dispersion_category: str
+    dispersion_color: str
+    is_critical_trap: bool
+
+
+@dataclass(frozen=True)
+class VentilationResponseDTO:
+    timestamp: str
+    district: str
+    pbl_height_m: float
+    surface_wind_speed_ms: float
+    ventilation_index: float
+    dispersion_category: str
+    dispersion_color: str
+    is_critical_trap: bool
+    districts: List[DistrictVentilationDTO] = field(default_factory=list)
+
+
+@dataclass(frozen=True)
+class EmergencyActionsResponseDTO:
+    provincial_mean_aqi: float
+    max_aqi: float
+    max_aqi_district: str
+    overall_alert_level: int
+    overall_alert_name: str
+    overall_alert_color: str
+    districts_in_emergency: List[str] = field(default_factory=list)
+    districts_in_hazardous: List[str] = field(default_factory=list)
+    districts_in_severe: List[str] = field(default_factory=list)
+    district_evaluation: Optional[Dict[str, Any]] = None
+    all_evaluations: List[Dict[str, Any]] = field(default_factory=list)
+

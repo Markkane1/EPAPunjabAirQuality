@@ -1,5 +1,5 @@
-import type { ReactNode } from 'react';
-import { Maximize2, ZoomIn, ZoomOut } from '../components/common/icons';
+import { useState, type ReactNode } from 'react';
+import { LayoutGrid, Maximize2, ZoomIn, ZoomOut } from '../components/common/icons';
 import { ThemeProvider } from '../context/theme-provider';
 import { Button } from '../components/ui/button';
 import { Card } from '../components/ui/card';
@@ -7,6 +7,7 @@ import { CommandBar } from '../components/command/CommandBar';
 import { SpatialDock } from '../components/dock/SpatialDock';
 import { ReceptorInspector } from '../components/inspector/ReceptorInspector';
 import { TimelineScrubber } from '../components/scrubber/TimelineScrubber';
+import { MultiPollutantGrid } from '../components/grid/MultiPollutantGrid';
 import { cn } from '../lib/utils';
 import gridStyles from '../styles/grid.module.css';
 import type { LayerId, PollutantKey } from '../domain/types';
@@ -42,6 +43,8 @@ export function WorkstationView({
   csvFeedback,
   mapSlot,
 }: WorkstationHandlers & { model: WorkstationModel }) {
+  const [showGrid, setShowGrid] = useState<boolean>(false);
+
   return (
     <div className={cn(gridStyles.workstation, "antialiased")}>
       {/* Zone 1: Command Header */}
@@ -52,11 +55,14 @@ export function WorkstationView({
         stream={model.stream}
         streamLabel={model.streamLabel}
         stationCounter={model.stationCounter}
+        timestamp={model.scrubber.timestampLine}
         pollutant={model.pollutant}
         pollutants={model.pollutants}
         hazardous={model.hazardous}
         qaLines={model.qaLines}
         csvFeedback={csvFeedback}
+        isGridOpen={showGrid}
+        onToggleGrid={() => setShowGrid((v) => !v)}
         onPollutant={onPollutant}
         onIngestFile={onIngestFile}
       />
@@ -97,6 +103,16 @@ export function WorkstationView({
           <Button
             variant="ghost"
             size="icon"
+            className={cn("h-7 w-7 rounded-none", showGrid && "bg-primary text-primary-foreground")}
+            aria-label="Toggle 3x3 Multi-Pollutant Grid"
+            title="Toggle 3x3 Multi-Pollutant Grid"
+            onClick={() => setShowGrid((v) => !v)}
+          >
+            <LayoutGrid size={14} strokeWidth={1.25} />
+          </Button>
+          <Button
+            variant="ghost"
+            size="icon"
             className="h-7 w-7 rounded-none"
             aria-label="Zoom in"
             onClick={() => onZoom?.('in')}
@@ -123,8 +139,23 @@ export function WorkstationView({
           </Button>
         </div>
 
+        {/* 3x3 Multi-Pollutant Comparison Grid Overlay (GAP-UI-01) */}
+        {showGrid && (
+          <div className="absolute left-3 top-3 z-20 w-[420px] max-w-[calc(100%-6rem)] shadow-lg animate-in fade-in zoom-in-95 duration-100">
+            <MultiPollutantGrid
+              activePollutant={model.pollutant}
+              onSelectPollutant={(p) => {
+                onPollutant?.(p);
+              }}
+            />
+          </div>
+        )}
+
         {/* Floating PEPC Statutory Legend */}
         <Card className="absolute bottom-3 left-3 z-10 rounded-none border-border bg-card/95 p-2.5 text-[11px] shadow-none">
+          <div className="mb-1 font-mono text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">
+            PEPC Statutory AQI Scale
+          </div>
           {model.legend.map((tier) => (
             <div key={tier.label} className="flex items-center gap-2 font-mono tabular-nums">
               <span className="h-2.5 w-4 rounded-none" style={{ backgroundColor: tier.hex }} />

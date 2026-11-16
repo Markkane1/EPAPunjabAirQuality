@@ -127,13 +127,13 @@ export interface HazardousAlert {
 }
 
 const LEGEND: LegendTier[] = [
-  { label: 'Good 0\u201350', hex: '#009966', min: 0, max: 50 },
-  { label: 'Satisfactory 51\u2013100', hex: '#58B947', min: 51, max: 100 },
-  { label: 'Moderate 101\u2013200', hex: '#FFDE33', min: 101, max: 200 },
-  { label: 'Poor 201\u2013300', hex: '#FF9933', min: 201, max: 300 },
-  { label: 'Very Poor 301\u2013400', hex: '#CC0033', min: 301, max: 400 },
-  { label: 'Severe 401\u2013499', hex: '#901530', min: 401, max: 499 },
-  { label: 'Hazardous 500+', hex: '#C00000', min: 500, max: 500 },
+  { label: 'Good 0\u201350', hex: '#00B050', min: 0, max: 50 },
+  { label: 'Satisfactory 51\u2013100', hex: '#92D050', min: 51, max: 100 },
+  { label: 'Moderate 101\u2013150', hex: '#FFFF00', min: 101, max: 150 },
+  { label: 'Unhealthy (Sensitive) 151\u2013200', hex: '#ED7D31', min: 151, max: 200 },
+  { label: 'Unhealthy 201\u2013300', hex: '#FF0000', min: 201, max: 300 },
+  { label: 'Very Unhealthy 301\u2013400', hex: '#7030A0', min: 301, max: 400 },
+  { label: 'Hazardous 401+', hex: '#C00000', min: 401, max: 9999 },
 ];
 
 const SUBINDEX_BREAKS: Record<string, number[]> = {

@@ -32,7 +32,8 @@ class TestWorkspaceArchival:
         assert archived_index.stat().st_size > 9_000_000, "Archived index.html appears incomplete or empty"
 
         root_index = PROJECT_ROOT / "index.html"
-        assert not root_index.exists(), f"Legacy index.html still present in project root: {root_index}"
+        if root_index.exists():
+            assert root_index.stat().st_size < 100_000, "Root index.html must be modernized Vite shell, not legacy 9MB monolith"
 
     def test_collector_relocated(self):
         archived_collector = PROJECT_ROOT / "original System" / "collector"

@@ -169,6 +169,12 @@ def create_application() -> FastAPI:
     app.include_router(epa.router)
 
     # Mount Static Frontend Assets & Root Delivery
+    project_root = Path(__file__).resolve().parent.parent.parent
+    dist_dir = project_root / "dist"
+    dist_assets = dist_dir / "assets"
+    if dist_assets.exists():
+        app.mount("/assets", StaticFiles(directory=str(dist_assets)), name="dist-assets")
+
     frontend_dir = Path(__file__).resolve().parent.parent / "frontend"
     static_dir = frontend_dir / "static"
     if static_dir.exists():
@@ -177,6 +183,12 @@ def create_application() -> FastAPI:
     @app.get("/", include_in_schema=False)
     @app.get("/index.html", include_in_schema=False)
     async def serve_index():
+        dist_workstation = dist_dir / "workstation.html"
+        if dist_workstation.exists():
+            return FileResponse(dist_workstation)
+        dist_index = dist_dir / "index.html"
+        if dist_index.exists():
+            return FileResponse(dist_index)
         html_file = frontend_dir / "dashboard.html"
         if not html_file.exists():
             html_file = frontend_dir / "index.html"

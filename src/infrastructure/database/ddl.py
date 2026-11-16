@@ -250,6 +250,15 @@ def init_schema(engine: Engine) -> Dict[str, Any]:
                     """))
                     results["compression_policies_applied"].append("interdistrict_transport_flux")
                     logger.info("Configured LZ4 compression and retention policies on hypertables.")
+
+                    # Configure TimescaleDB Continuous Aggregates & Scheduled Refresh Policies
+                    try:
+                        from src.infrastructure.database.continuous_aggregates import TIMESCALE_CONTINUOUS_AGGREGATES_DDL
+                        conn.execute(text(TIMESCALE_CONTINUOUS_AGGREGATES_DDL))
+                        results["continuous_aggregates_created"] = ["district_hourly_cagg", "district_daily_cagg"]
+                        logger.info("Configured TimescaleDB continuous aggregate views and refresh policies.")
+                    except Exception as cagg_err:
+                        logger.warning(f"Continuous aggregate setup notice: {cagg_err}")
                 except Exception as comp_err:
                     logger.warning(f"TimescaleDB compression policy notice: {comp_err}")
 

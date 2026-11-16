@@ -78,6 +78,8 @@ async def sse_event_generator(
                     if max_events is not None and events_sent >= max_events:
                         break
                 except asyncio.TimeoutError:
+                    # Timeout on queue means keepalive interval elapsed: emit keepalive heartbeat
+                    yield ": keepalive\n\nevent: keepalive\ndata: {}\n\n"
                     # Check if observation service updated directly (e.g. repo injection)
                     latest_ts = obs_service.get_latest_timestamp_utc()
                     if latest_ts and latest_ts != last_emitted_timestamp:
@@ -87,8 +89,6 @@ async def sse_event_generator(
                         events_sent += 1
                         if max_events is not None and events_sent >= max_events:
                             break
-                    # 15s timeout: emit keepalive
-                    yield ": keepalive\n\nevent: keepalive\ndata: {}\n\n"
             else:
                 # Polling fallback mode
                 await asyncio.sleep(POLL_CHECK_INTERVAL_SECONDS)

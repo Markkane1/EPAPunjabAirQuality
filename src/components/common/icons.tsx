@@ -20,6 +20,16 @@ function baseProps(props: IconProps) {
   };
 }
 
+export const LayoutGrid = React.forwardRef<SVGSVGElement, IconProps>((props, ref) => (
+  <svg ref={ref} {...baseProps(props)}>
+    <rect x="3" y="3" width="7" height="7" />
+    <rect x="14" y="3" width="7" height="7" />
+    <rect x="14" y="14" width="7" height="7" />
+    <rect x="3" y="14" width="7" height="7" />
+  </svg>
+));
+LayoutGrid.displayName = 'LayoutGrid';
+
 export const Activity = React.forwardRef<SVGSVGElement, IconProps>((props, ref) => (
   <svg ref={ref} {...baseProps(props)}>
     <polyline points="22 12 18 12 15 21 9 3 6 12 2 12" />

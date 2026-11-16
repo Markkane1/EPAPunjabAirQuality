@@ -84,3 +84,76 @@ class TransboundaryResponse(BaseModel):
     status: str = Field(..., description="net_inflow, net_outflow, or neutral")
     border_districts: Dict[str, BorderDistrictTransboundaryDetail] = Field(default_factory=dict)
     border_samples: List[BorderSampleNode] = Field(default_factory=list)
+
+
+# --- Forecasting & Emergency Mitigation Schemas ---
+
+class ForecastResponse(BaseModel):
+    model_config = ConfigDict(from_attributes=True, populate_by_name=True)
+
+    district: str = Field(...)
+    pollutant: str = Field(...)
+    recent_mean: float = Field(..., description="Mean observed concentration over recent 24-hour cycle")
+    trend_scaling_ratio: float = Field(..., description="Recent-to-historical scaling ratio")
+    projected_peak: float = Field(..., description="Predicted peak hourly concentration")
+    forecast_24h: List[float] = Field(default_factory=list, description="Hourly forecasted concentrations for next 24h")
+    multi_district_forecast: Dict[str, List[float]] = Field(default_factory=dict)
+
+
+class DistrictVentilationDetail(BaseModel):
+    model_config = ConfigDict(from_attributes=True, populate_by_name=True)
+
+    district: str = Field(...)
+    pbl_height_m: float = Field(..., description="Boundary layer mixing height (m AGL)")
+    surface_wind_speed_ms: float = Field(..., description="Surface wind speed (m/s)")
+    ventilation_index: float = Field(..., description="Ventilation index h_PBL * w_sfc (m^2/s)")
+    dispersion_category: str = Field(..., description="Statutory dispersion risk classification")
+    dispersion_color: str = Field(...)
+    is_critical_trap: bool = Field(..., description="True if VI < 2000 m^2/s")
+
+
+class VentilationResponse(BaseModel):
+    model_config = ConfigDict(from_attributes=True, populate_by_name=True)
+
+    timestamp: str = Field(...)
+    district: str = Field(...)
+    pbl_height_m: float = Field(...)
+    surface_wind_speed_ms: float = Field(...)
+    ventilation_index: float = Field(...)
+    dispersion_category: str = Field(...)
+    dispersion_color: str = Field(...)
+    is_critical_trap: bool = Field(...)
+    districts: List[DistrictVentilationDetail] = Field(default_factory=list)
+
+
+class DistrictEmergencyActionDetail(BaseModel):
+    model_config = ConfigDict(from_attributes=True, populate_by_name=True)
+
+    district: str = Field(...)
+    aqi: float = Field(...)
+    pm25: Optional[float] = Field(None)
+    alert_level: int = Field(..., description="Statutory alert level (0 to 5)")
+    alert_name: str = Field(...)
+    alert_color: str = Field(...)
+    is_emergency_triggered: bool = Field(...)
+    is_school_closure_mandated: bool = Field(...)
+    is_market_curfew_mandated: bool = Field(...)
+    is_odd_even_mandated: bool = Field(...)
+    mandatory_actions: List[str] = Field(default_factory=list)
+
+
+class EmergencyActionsResponse(BaseModel):
+    model_config = ConfigDict(from_attributes=True, populate_by_name=True)
+
+    provincial_mean_aqi: float = Field(...)
+    max_aqi: float = Field(...)
+    max_aqi_district: str = Field(...)
+    overall_alert_level: int = Field(...)
+    overall_alert_name: str = Field(...)
+    overall_alert_color: str = Field(...)
+    districts_in_emergency: List[str] = Field(default_factory=list)
+    districts_in_hazardous: List[str] = Field(default_factory=list)
+    districts_in_severe: List[str] = Field(default_factory=list)
+    district_evaluation: Optional[DistrictEmergencyActionDetail] = None
+    all_evaluations: List[DistrictEmergencyActionDetail] = Field(default_factory=list)
+

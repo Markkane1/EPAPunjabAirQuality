@@ -17,6 +17,7 @@ logger = logging.getLogger(__name__)
 
 # Official aerodynamic roughness scaling reconciliation factor (§3.4.2)
 ROUGHNESS_SCALING_FACTOR: float = 0.22686
+ROUGHNESS_SCALING_FACTOR_EXACT: float = 0.22686365412534343
 DEFAULT_FALLBACK_FACTOR: float = 0.34
 
 
@@ -71,7 +72,7 @@ class OpenMeteoIngestionWorker(BaseIngestionWorker):
         params = {
             "latitude": ",".join(lat_list),
             "longitude": ",".join(lon_list),
-            "hourly": "wind_speed_10m,wind_direction_10m",
+            "hourly": "wind_speed_10m,wind_direction_10m,wind_speed_925hPa,wind_direction_925hPa",
             "models": "ecmwf_ifs025",
             "wind_speed_unit": "ms",
             "timezone": "Asia/Karachi",
@@ -123,6 +124,8 @@ class OpenMeteoIngestionWorker(BaseIngestionWorker):
             hourly = item.get("hourly", {})
             speeds = hourly.get("wind_speed_10m", [])
             dirs = hourly.get("wind_direction_10m", [])
+            speeds_925 = hourly.get("wind_speed_925hPa", hourly.get("windspeed_925hPa", []))
+            dirs_925 = hourly.get("wind_direction_925hPa", hourly.get("winddirection_925hPa", []))
             times = hourly.get("time", [])
 
             # Determine hour index (default: latest or specified)
@@ -132,7 +135,11 @@ class OpenMeteoIngestionWorker(BaseIngestionWorker):
             deg = float(dirs[target_idx]) if target_idx < len(dirs) else 0.0
             time_str = times[target_idx] if target_idx < len(times) else ""
 
-            # Decompose into raw (u, v)
+            # Upper-air 925 hPa wind fields
+            spd_925 = float(speeds_925[target_idx]) if target_idx < len(speeds_925) and speeds_925[target_idx] is not None else None
+            deg_925 = float(dirs_925[target_idx]) if target_idx < len(dirs_925) and dirs_925[target_idx] is not None else None
+
+            # Decompose surface wind into raw (u, v)
             if spd < 0.5:
                 u_raw = 0.0
                 v_raw = 0.0
@@ -146,7 +153,19 @@ class OpenMeteoIngestionWorker(BaseIngestionWorker):
             v_calibrated = round(v_raw * self.roughness_k_r, 4)
             spd_calibrated = round(spd * self.roughness_k_r, 3)
 
-            results.append({
+            # Decompose 925 hPa wind (no surface roughness scaling at 925 hPa AGL)
+            if spd_925 is not None and deg_925 is not None:
+                if spd_925 < 0.5:
+                    u_925 = 0.0
+                    v_925 = 0.0
+                else:
+                    rad_925 = math.radians(deg_925)
+                    u_925 = round(-spd_925 * math.sin(rad_925), 4)
+                    v_925 = round(-spd_925 * math.cos(rad_925), 4)
+            else:
+                u_925, v_925 = None, None
+
+            record = {
                 "district": dname,
                 "timestamp": time_str,
                 "wind_speed_raw_ms": spd,
@@ -157,7 +176,14 @@ class OpenMeteoIngestionWorker(BaseIngestionWorker):
                 "roughness_factor": self.roughness_k_r,
                 "is_estimated": False,
                 "source": "ecmwf_open_meteo",
-            })
+            }
+            if spd_925 is not None:
+                record["wind_speed_925hPa"] = spd_925
+                record["wind_direction_925hPa"] = deg_925
+                record["u_925"] = u_925
+                record["v_925"] = v_925
+
+            results.append(record)
 
         return results
 

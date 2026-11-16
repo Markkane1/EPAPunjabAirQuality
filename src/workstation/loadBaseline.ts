@@ -54,9 +54,23 @@ export interface PollutantBlock {
 }
 
 export async function loadBaseline(): Promise<BaselineFile> {
-  const response = await fetch(baselineUrl);
-  if (!response.ok) {
-    throw new Error(`Baseline fetch failed (${response.status})`);
+  const urls = [
+    baselineUrl,
+    '/static/data/baseline_data.json',
+    '/data/baseline/baseline_data.json',
+    './data/baseline/baseline_data.json',
+  ];
+
+  for (const url of urls) {
+    try {
+      const response = await fetch(url);
+      if (response.ok) {
+        return (await response.json()) as BaselineFile;
+      }
+    } catch {
+      // try next candidate url
+    }
   }
-  return response.json() as Promise<BaselineFile>;
+
+  throw new Error('Baseline fetch failed across all candidate URLs');
 }

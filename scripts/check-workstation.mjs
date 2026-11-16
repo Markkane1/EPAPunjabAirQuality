@@ -16,13 +16,13 @@ const stationsPath = path.join(repoRoot, 'data', 'baseline', 'stations.json')
 const FROZEN_POLLUTANTS = ['AQI', 'PM2.5', 'PM10', 'NO2', 'SO2', 'CO', 'O3', 'NO', 'NOX']
 const ZONE_IDS = ['command-bar', 'spatial-dock', 'map-canvas', 'receptor-inspector', 'temporal-scrubber']
 const LEGEND = [
-  ['Good 0–50', '#009966'],
-  ['Satisfactory 51–100', '#58B947'],
-  ['Moderate 101–200', '#FFDE33'],
-  ['Poor 201–300', '#FF9933'],
-  ['Very Poor 301–400', '#CC0033'],
-  ['Severe 401–499', '#901530'],
-  ['Hazardous 500+', '#C00000'],
+  ['Good 0–50', '#00B050'],
+  ['Satisfactory 51–100', '#92D050'],
+  ['Moderate 101–150', '#FFFF00'],
+  ['Unhealthy (Sensitive) 151–200', '#ED7D31'],
+  ['Unhealthy 201–300', '#FF0000'],
+  ['Very Unhealthy 301–400', '#7030A0'],
+  ['Hazardous 401+', '#C00000'],
 ]
 
 function assert(cond, message) {

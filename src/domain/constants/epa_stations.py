@@ -376,6 +376,24 @@ def get_epa_station_info(station_id_or_name: str) -> Optional[Dict[str, Any]]:
         if api_id.lower() == lower:
             return info
 
+    # Fallback to baseline repository stations if not in 38-station live catalog
+    try:
+        from src.infrastructure.repositories.baseline_repository import BaselineRepository
+        repo = BaselineRepository()
+        stn = repo.get_station(clean) or repo.get_station(lower)
+        if stn:
+            return {
+                "api_id": stn.id,
+                "display_name": stn.name,
+                "city": stn.district,
+                "district": stn.district,
+                "latitude": stn.latitude,
+                "longitude": stn.longitude,
+                "station_type": stn.station_type,
+            }
+    except Exception:
+        pass
+
     return None
 
 

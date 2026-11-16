@@ -1,5 +1,5 @@
 import React from 'react';
-import { Activity, AlertTriangle, SlidersHorizontal } from '../common/icons';
+import { Activity, AlertTriangle, LayoutGrid, SlidersHorizontal } from '../common/icons';
 import { ThemeSwitch } from '../theme-switch';
 import { Badge } from '../ui/badge';
 import { Button } from '../ui/button';
@@ -25,6 +25,9 @@ export interface CommandBarProps {
   hazardous: HazardousAlert | null;
   qaLines: string[];
   csvFeedback?: string | null;
+  timestamp?: string;
+  isGridOpen?: boolean;
+  onToggleGrid?: () => void;
   onPollutant?: (key: PollutantKey) => void;
   onIngestFile?: (file: File) => void;
   onUploadCSV?: (file: File, allowMissingCoords: boolean) => Promise<CSVIngestResponse>;
@@ -43,6 +46,9 @@ export const CommandBar: React.FC<CommandBarProps> = ({
   hazardous,
   qaLines,
   csvFeedback,
+  timestamp,
+  isGridOpen,
+  onToggleGrid,
   onPollutant,
   onIngestFile,
   onUploadCSV,
@@ -86,6 +92,15 @@ export const CommandBar: React.FC<CommandBarProps> = ({
         <Badge variant="secondary" className="h-6 rounded-none font-mono text-[11px] tabular-nums">
           {stationCounter}
         </Badge>
+        {timestamp ? (
+          <Badge
+            variant="outline"
+            data-testid="simulation-clock"
+            className="h-6 rounded-none font-mono text-[11px] tabular-nums text-foreground"
+          >
+            {timestamp}
+          </Badge>
+        ) : null}
       </div>
 
       {/* Group 2: Statutory 9-Pollutant Switcher */}
@@ -145,6 +160,21 @@ export const CommandBar: React.FC<CommandBarProps> = ({
           <span className="font-mono text-[11px] text-muted-foreground hidden lg:inline">
             {csvFeedback}
           </span>
+        ) : null}
+
+        {onToggleGrid ? (
+          <Button
+            variant="outline"
+            size="sm"
+            data-testid="toggle-grid-btn"
+            className={cn("h-8 gap-1.5 rounded-none text-xs font-medium", isGridOpen && "bg-primary text-primary-foreground")}
+            onClick={onToggleGrid}
+            aria-label="Toggle 3x3 Multi-Pollutant Grid"
+            title="Toggle 3x3 Multi-Pollutant Grid"
+          >
+            <LayoutGrid size={14} strokeWidth={1.25} />
+            <span>3x3 Grid</span>
+          </Button>
         ) : null}
 
         <Sheet>

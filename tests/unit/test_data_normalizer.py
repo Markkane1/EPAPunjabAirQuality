@@ -21,8 +21,10 @@ from src.domain.normalizer.normalizer import (
     count_station_networks,
     is_blacklisted_station,
     is_district_estimated,
+    is_point_in_polygon,
     normalize_centroid,
     normalize_wind,
+    sanitize_station_coordinates,
     should_apply_diagonal_hatching,
 )
 
@@ -230,3 +232,36 @@ class TestSchemaTrap5EstimationFlagUnification:
         # Verify hatching matches
         for d in districts:
             assert should_apply_diagonal_hatching(d) == is_district_estimated(d)
+
+
+class TestGeometricSanitizer:
+    """Tests GAP-GEO-03: Shapefile and geometric coordinate sanitization."""
+
+    def test_canonical_trap_overrides(self):
+        # Known trap: Gulberg III
+        lat, lon, rectified = sanitize_station_coordinates("Gulberg III, Lahore", 31.0, 74.0)
+        assert rectified is True
+        assert abs(lat - 31.5097) < 0.001
+        assert abs(lon - 74.3478) < 0.001
+
+        # Known trap: Wazirabad
+        lat, lon, rectified = sanitize_station_coordinates("Wazirabad AQMS", 32.0, 74.0)
+        assert rectified is True
+        assert abs(lat - 32.4428) < 0.001
+
+    def test_inversion_and_out_of_bounds_detection(self):
+        # Inverted coordinates [lon, lat] passed to lat, lon
+        lat, lon, rectified = sanitize_station_coordinates("Unknown Station", 74.34, 31.54)
+        assert rectified is True
+        assert abs(lat - 31.54) < 0.001
+        assert abs(lon - 74.34) < 0.001
+
+        # Completely out of bounds (e.g. London coordinates)
+        lat, lon, rectified = sanitize_station_coordinates("Foreign Station", 51.5, -0.1)
+        assert rectified is True
+
+    def test_point_in_polygon(self):
+        # Unit square in Punjab
+        poly = [[74.0, 31.0], [75.0, 31.0], [75.0, 32.0], [74.0, 32.0]]
+        assert is_point_in_polygon(31.5, 74.5, poly) is True
+        assert is_point_in_polygon(33.0, 74.5, poly) is False

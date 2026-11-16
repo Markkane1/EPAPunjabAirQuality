@@ -5,7 +5,14 @@ from fastapi import APIRouter, Depends, HTTPException, Query
 from fastapi.exceptions import RequestValidationError
 
 from src.api.dependencies import get_analytics_service, get_observation_service
-from src.api.schemas.analytics import CPFRoseResponse, FluxTransportResponse, TransboundaryResponse
+from src.api.schemas.analytics import (
+    CPFRoseResponse,
+    EmergencyActionsResponse,
+    FluxTransportResponse,
+    ForecastResponse,
+    TransboundaryResponse,
+    VentilationResponse,
+)
 from src.services.analytics_service import AnalyticsService
 from src.services.observation_service import ObservationService
 
@@ -139,3 +146,65 @@ async def get_daily_rollups(
         start_time=start_time,
         end_time=end_time,
     )
+
+
+@router.get(
+    "/forecast",
+    response_model=ForecastResponse,
+    summary="Transformation 10: 24-Hour Diurnal Persistence Forecast",
+)
+async def get_diurnal_persistence_forecast(
+    district: Optional[str] = Query(None, description="District name (defaults to Lahore)"),
+    pollutant: str = Query("PM2.5", description="Pollutant species to forecast"),
+    analytics_service: AnalyticsService = Depends(get_analytics_service),
+) -> ForecastResponse:
+    """Computes 24-hour diurnal persistence forecast scaled by recent-to-historical trend ratio."""
+    try:
+        dto = analytics_service.calculate_forecast(
+            district_name=district,
+            pollutant=pollutant,
+        )
+        return ForecastResponse.model_validate(dto)
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Forecast calculation failed: {str(e)}")
+
+
+@router.get(
+    "/ventilation",
+    response_model=VentilationResponse,
+    summary="Transformation 11: Atmospheric Ventilation Index & Dispersion Classification",
+)
+async def get_ventilation_index(
+    district: Optional[str] = Query(None, description="District name (defaults to Lahore)"),
+    timestamp: Optional[datetime] = Query(None, description="Target observation timestamp"),
+    analytics_service: AnalyticsService = Depends(get_analytics_service),
+) -> VentilationResponse:
+    """Computes Planetary Boundary Layer Atmospheric Ventilation Index (VI = h_PBL * w_sfc) and dispersion category."""
+    try:
+        dto = analytics_service.calculate_ventilation(
+            district_name=district,
+            timestamp=timestamp,
+        )
+        return VentilationResponse.model_validate(dto)
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Ventilation index calculation failed: {str(e)}")
+
+
+@router.get(
+    "/emergency-actions",
+    response_model=EmergencyActionsResponse,
+    summary="Domain 1: Statutory Graded Emergency Action Policy Engine",
+)
+async def get_emergency_actions(
+    district: Optional[str] = Query(None, description="Optional target district name to evaluate"),
+    analytics_service: AnalyticsService = Depends(get_analytics_service),
+) -> EmergencyActionsResponse:
+    """Evaluates multi-tier emergency alerts and statutory actions based on PEPC thresholds."""
+    try:
+        dto = analytics_service.evaluate_emergency_actions(
+            district_name=district,
+        )
+        return EmergencyActionsResponse.model_validate(dto)
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Emergency action evaluation failed: {str(e)}")
+

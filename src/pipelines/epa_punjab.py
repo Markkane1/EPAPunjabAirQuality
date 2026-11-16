@@ -41,10 +41,11 @@ INVALID_STATUS_STRINGS = {"incomplete", "n/a", "invalid", "null", "none"}
 class EPAPunjabIngestionWorker(BaseIngestionWorker):
     """
     Client and Ingestion Worker for Environmental Protection Department (EPD) Punjab.
-    Connects to the official live AQMS API at https://api.epd-aqms-pk.com.
+    Connects to the official live AQMS API at https://api.epd-aqms-pk.com (portal: https://aqi.punjab.gov.pk).
     """
 
     DEFAULT_BASE_URL: str = "https://api.epd-aqms-pk.com"
+    PUBLIC_PORTAL_URL: str = "https://aqi.punjab.gov.pk"
     DEFAULT_API_KEY: str = "7b2f49c1e0e447c6a2bde74b81f51a87"
     DEFAULT_USER_AGENT: str = "EMC-EPA-Punjab-AQ-dashboard/1.0"
 

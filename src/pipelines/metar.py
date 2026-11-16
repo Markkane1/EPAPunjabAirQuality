@@ -33,6 +33,7 @@ TARGET_ICAO_CODES: List[str] = [
 ]
 
 KNOTS_TO_MS: float = 0.514444
+KNOTS_TO_MS_APPROX: float = 0.5144
 STATUTE_MILES_TO_METERS: float = 1609.344
 
 WEATHER_TOKEN_MAP: Dict[str, str] = {
@@ -115,10 +116,11 @@ class MetarIngestionWorker(BaseIngestionWorker):
         self,
         raw_data: Any,
         target_timestamp: Optional[datetime] = None,
+        window_minutes: Optional[Union[int, Tuple[int, int]]] = None,
     ) -> List[Dict[str, Any]]:
         """
         Parses array of METAR reports.
-        Selects reports closest to top of hour within [-35 min, +25 min] window.
+        Selects reports closest to top of hour within specified or default window.
         Converts knots to m/s, statute miles to meters, applies metric visibility regex,
         and decodes present weather tokens.
         """
@@ -144,7 +146,7 @@ class MetarIngestionWorker(BaseIngestionWorker):
 
         results: List[Dict[str, Any]] = []
         for icao, reports in reports_by_icao.items():
-            best_report = self._select_temporally_aligned_report(reports, ref_time)
+            best_report = self._select_temporally_aligned_report(reports, ref_time, window_minutes=window_minutes)
             if best_report:
                 parsed = self._parse_single_metar(best_report)
                 if parsed:
@@ -153,13 +155,24 @@ class MetarIngestionWorker(BaseIngestionWorker):
         return results
 
     def _select_temporally_aligned_report(
-        self, reports: List[Dict[str, Any]], ref_time: datetime
+        self,
+        reports: List[Dict[str, Any]],
+        ref_time: datetime,
+        window_minutes: Optional[Union[int, Tuple[int, int]]] = None,
     ) -> Optional[Dict[str, Any]]:
         """
-        Selects report closest in time to ref_time within window [-35 min, +25 min].
+        Selects report closest in time to ref_time within window.
+        Defaults to [-35 min, +25 min] or accepts symmetric int / explicit tuple.
         """
-        min_window = ref_time - timedelta(minutes=35)
-        max_window = ref_time + timedelta(minutes=25)
+        if window_minutes is None:
+            past_m, future_m = 35, 25
+        elif isinstance(window_minutes, (int, float)):
+            past_m, future_m = int(window_minutes), int(window_minutes)
+        else:
+            past_m, future_m = int(window_minutes[0]), int(window_minutes[1])
+
+        min_window = ref_time - timedelta(minutes=past_m)
+        max_window = ref_time + timedelta(minutes=future_m)
 
         valid_candidates: List[Tuple[float, Dict[str, Any]]] = []
         for r in reports:

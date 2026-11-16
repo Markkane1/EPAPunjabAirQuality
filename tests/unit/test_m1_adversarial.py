@@ -53,6 +53,9 @@ class TestArchivalRemnantsEmpirical:
                 continue
 
             if p.name in forbidden_names:
+                # Allow modern Vite application entry point (< 100KB)
+                if p.name == "index.html" and p.stat().st_size < 100_000:
+                    continue
                 remnants.append(str(rel))
             elif p.is_dir() and p.name == "collector" and rel.parts[0] != "original System":
                 remnants.append(str(rel))
