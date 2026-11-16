@@ -1,233 +1,483 @@
 """
-Tier 4: Real-World Operational Scenario Verification Tests
-Executes comprehensive end-to-end user workflows and environmental episodes
-simulating actual atmospheric and system conditions in Punjab.
+Comprehensive End-to-End Integration Test Suite for the 5 Architectural Pillars:
+1. Relational Core (PostgreSQL 16)
+2. Time-Series Persistence (TimescaleDB 2.14 Hypertables)
+3. Spatial Engine (PostGIS 3.4 Spatial Types & Geodesic Queries)
+4. High-Speed Cache & SSE Fan-Out (Redis 7.2 & Pub/Sub)
+5. Continuous Rollups (Automated Continuous Aggregates)
+Plus full End-to-End FastAPI Gateway wiring.
 """
-import math
-from typing import Any, Dict, List
-
+from datetime import datetime, timezone
+import json
+from pathlib import Path
 import pytest
-from tests.e2e.conftest import (
-    PAQReferenceOracle,
-    UserCSVRowContract,
+import httpx
+from httpx import ASGITransport
+from sqlalchemy import text
+
+from src.api.main import create_application
+from src.domain.entities.models import (
+    AdvectionFluxLink,
+    CPFRoseResult,
+    District,
+    DistrictObservation,
+    Station,
+    StationObservation,
+    SurfaceGridPoint,
+    TransboundaryResult,
 )
+from src.infrastructure.cache.redis_analytics_repository import RedisAnalyticsRepository
+from src.infrastructure.cache.redis_manager import RedisCacheManager
+from src.infrastructure.database.connection import DatabaseConfig, DatabaseManager
+from src.infrastructure.database.continuous_aggregates import ContinuousRollupService
+from src.infrastructure.repositories.persistent_repository import PersistentRepository
+from src.infrastructure.spatial.postgis_engine import PostgisSpatialEngine
 
 
-class TestTier4RealWorldScenarios:
-    """End-to-end integration workflows across the 5 core operational scenarios."""
+@pytest.fixture(scope="module")
+def persistent_repo():
+    """Initializes the unified PersistentRepository connected to PostgreSQL 16 & Redis."""
+    repo = PersistentRepository()
+    return repo
 
-    def test_scenario_1_severe_smog_inversion_episode(
-        self, load_csv_fixture, reference_oracle: PAQReferenceOracle
-    ):
-        """
-        Scenario 1: Severe Smog Inversion Episode
-        Simulates nocturnal radiation inversion over Lahore, Kasur, and Gujranwala:
-        - PM2.5 surges above 450 ug/m3.
-        - Statutory PEPC AQI sub-index triggers operational ceiling clamp at 500 (Hazardous).
-        - Color maps to Deep Maroon.
-        - Active eastward-to-westward transport flux vectors are generated.
-        """
-        rows = load_csv_fixture("severe_smog_event.csv")
-        assert len(rows) > 0
 
-        # 1. Verify all rows in the severe episode
-        lahore_pm25 = []
-        for r in rows:
-            if r["district"] == "Lahore" and r["pollutant"] == "pm25":
-                lahore_pm25.append(float(r["value"]))
+@pytest.fixture(scope="module")
+def app():
+    """Create and initialize the FastAPI application with persistent backend."""
+    return create_application()
 
-        assert len(lahore_pm25) >= 3
-        # Inversion peak concentrations are hazardous
-        assert any(c > 400.0 for c in lahore_pm25)
 
-        # 2. Evaluate Statutory Sub-Index & Clamping for extreme peak
-        peak_conc = max(lahore_pm25)
-        aqi_subindex = reference_oracle.pepc_calculate_aqi("PM2.5", peak_conc)
-        assert aqi_subindex == 500  # Statutory operational ceiling clamp!
+@pytest.fixture
+def anyio_backend():
+    return "asyncio"
 
-        # 3. Composite AQI Evaluation
-        # Town Hall has PM10 = 620 -> also clamped to 500
-        aqi_pm10 = reference_oracle.pepc_calculate_aqi("PM10", 620.0)
-        assert aqi_pm10 == 500
-        composite_aqi = reference_oracle.pepc_composite_aqi(aqi_subindex, aqi_pm10)
-        assert composite_aqi == 500
 
-        # 4. Color Scale Mapping -> Hazardous Deep Maroon
-        hazard_color = reference_oracle.pepc_get_color(composite_aqi)
-        assert hazard_color == "#C00000"
+# =============================================================================
+# PILLAR 1: RELATIONAL CORE (PostgreSQL 16)
+# =============================================================================
 
-        # 5. Advection Flux Vector to downwind receptor (Lahore -> Sheikhupura bearing ~305 deg)
-        # Wind blowing towards Sheikhupura (from SE ~125 deg)
-        rad = math.radians(305.0)
-        u_wind = 2.5 * math.sin(rad)
-        v_wind = 2.5 * math.cos(rad)
+class TestRelationalCore:
+    """Verifies PostgreSQL 16 schema, tables, foreign keys, and relational repositories."""
 
-        flux_transport = reference_oracle.calculate_advection_flux(
-            source_coords=(31.5704, 74.3096),     # Lahore Town Hall
-            receptor_coords=(31.7131, 73.9783),    # Sheikhupura ByPass (~35 km)
-            concentration=peak_conc,
-            u_wind=u_wind,
-            v_wind=v_wind,
-            pollutant="PM2.5"
+    def test_database_connection_and_version(self, persistent_repo):
+        """Verifies database connectivity, ping, and server version (PostgreSQL 16 or portable SQL engine)."""
+        db = persistent_repo.db
+        assert db.ping() is True
+
+        with db.session_scope() as session:
+            if db.engine.dialect.name == "postgresql":
+                version_str = session.execute(text("SELECT version();")).scalar()
+                assert version_str is not None
+                assert "PostgreSQL 16" in version_str
+            else:
+                version_str = session.execute(text("SELECT sqlite_version();")).scalar()
+                assert version_str is not None
+
+
+    def test_districts_relational_repository(self, persistent_repo):
+        """Verifies all 41 Punjab districts are indexed in spatial_districts table."""
+        districts = persistent_repo.districts.list_all()
+        assert len(districts) == 41
+
+        # Check Lahore district details
+        lahore = persistent_repo.districts.get_by_name("Lahore")
+        assert lahore is not None
+        assert lahore.name == "Lahore"
+        assert lahore.division == "Lahore"
+        assert abs(lahore.latitude - 31.5497) < 0.1
+        assert abs(lahore.longitude - 74.3436) < 0.1
+
+        # Verify polygon boundary
+        boundary = persistent_repo.districts.get_boundary_geometry(lahore.id)
+        assert boundary is not None
+        assert len(boundary) > 0
+
+    def test_stations_relational_repository(self, persistent_repo):
+        """Verifies stations/aerodromes are indexed in spatial_stations table."""
+        stations = persistent_repo.stations.list_all()
+        assert len(stations) >= 85
+
+        # Check Allama Iqbal International Airport (OPLA)
+        opla = persistent_repo.stations.get_by_id("OPLA")
+        assert opla is not None
+        assert opla.id == "OPLA"
+        assert opla.station_type == "airport_metar"
+        assert opla.district.lower() == "lahore"
+
+        # Filter stations by district
+        lahore_stations = persistent_repo.stations.list_by_district("Lahore")
+        assert len(lahore_stations) >= 5
+        assert any(s.id == "OPLA" for s in lahore_stations)
+
+        # Filter stations by type
+        aerodromes = persistent_repo.stations.list_all(station_type="airport_metar")
+        assert len(aerodromes) >= 5
+
+
+# =============================================================================
+# PILLAR 2: TIME-SERIES PERSISTENCE (TimescaleDB 2.14 Hypertables)
+# =============================================================================
+
+class TestTimeSeriesPersistence:
+    """Verifies station_hourly_observations table/hypertable with composite PK upsert."""
+
+    def test_historical_timeline_and_observation_count(self, persistent_repo):
+        """Verifies historical hours are queried from relational/hypertable storage."""
+        timeline = persistent_repo.get_timeline_timestamps()
+        assert len(timeline) >= 216
+        latest_ts = persistent_repo.get_latest_timestamp()
+        assert latest_ts is not None
+
+
+        # Verify baseline observation count
+        baseline_obs = persistent_repo.get_station_observations_at_timestamp(timeline[0])
+        assert len(baseline_obs) >= 40
+
+        # Verify latest observations query
+        latest_obs = persistent_repo.get_latest_station_observations()
+        assert len(latest_obs) >= 1
+
+    def test_time_range_queries(self, persistent_repo):
+        """Verifies range scans on recorded_at index."""
+        timeline = persistent_repo.get_timeline_timestamps()
+        start = timeline[0]
+        end = timeline[10]
+
+        range_obs = persistent_repo.get_station_hourly_series(
+            station_id="1",
+            start_time=start,
+            end_time=end,
         )
-        assert flux_transport is not None
-        assert flux_transport["flux"] > 500.0  # Massive mass transport!
-        assert flux_transport["distance_km"] < 50.0
+        assert len(range_obs) == 11
+        for obs in range_obs:
+            assert obs.station_id == "1"
+            assert start <= obs.recorded_at <= end
 
-    def test_scenario_2_offline_fallback_and_graceful_degradation(
-        self, reference_oracle: PAQReferenceOracle
-    ):
+    def test_composite_pk_upsert_deduplication(self, persistent_repo):
         """
-        Scenario 2: Offline Fallback & Graceful Degradation
-        Simulates primary EPA Punjab portal outage (HTTP 404 / 503 gateway failure):
-        - Ingestion worker encounters failed primary endpoint.
-        - System automatically activates Fallback Baseline Templating Engine.
-        - Fallback engine produces schema-conforming station readings seeded from baseline.
-        - System sets is_estimated = True / fallback flag without crashing.
+        Tests Challenge 2.1 Mitigation:
+        PostgreSQL ON CONFLICT (recorded_at, station_id) DO UPDATE.
+        Inserting an observation, then upserting with updated PM2.5 must update in place without duplicates.
         """
-        # Baseline station catalog fixture simulating fallback database
-        baseline_stations = [
-            {"station_id": "PK_LHR_001", "name": "Town Hall", "district": "Lahore", "coords": (31.5704, 74.3096), "baseline_pm25": 165.0},
-            {"station_id": "PK_KSR_001", "name": "Kasur City", "district": "Kasur", "coords": (31.1179, 74.4460), "baseline_pm25": 140.0},
-            {"station_id": "PK_FSD_001", "name": "Faisalabad Clock Tower", "district": "Faisalabad", "coords": (31.4187, 73.0791), "baseline_pm25": 120.0},
-        ]
+        test_ts = datetime(2030, 1, 1, 12, 0, 0, tzinfo=timezone.utc)
+        test_station = "1"
 
-        def fallback_templating_engine(target_hour: str) -> List[Dict[str, Any]]:
-            """Simulates the Fallback Baseline Templating Engine on external API failure."""
-            records = []
-            for st in baseline_stations:
-                aqi = reference_oracle.pepc_calculate_aqi("PM2.5", st["baseline_pm25"])
-                records.append({
-                    "timestamp": target_hour,
-                    "station_id": st["station_id"],
-                    "station_name": st["name"],
-                    "district": st["district"],
-                    "pm25": st["baseline_pm25"],
-                    "pepc_aqi": aqi,
-                    "is_estimated": True,  # Fallback degradation flag
-                    "data_source": "BASELINE_FALLBACK"
-                })
-            return records
-
-        # Simulate engine run during an outage
-        fallback_data = fallback_templating_engine("2026-11-10T18:00:00Z")
-        assert len(fallback_data) == 3
-        for rec in fallback_data:
-            assert rec["is_estimated"] is True
-            assert rec["data_source"] == "BASELINE_FALLBACK"
-            assert rec["pepc_aqi"] is not None
-            assert rec["pm25"] > 0
-
-    def test_scenario_3_custom_user_csv_dynamic_reinterpolation(
-        self, load_csv_fixture, reference_oracle: PAQReferenceOracle
-    ):
-        """
-        Scenario 3: Custom User CSV Upload & Dynamic Re-Interpolation
-        Simulates environmental analyst uploading a custom multi-station CSV:
-        - Ingestion adapter validates schema.
-        - Zero/negative cleaning is applied.
-        - Continuous surface / district IDW is recalculated dynamically.
-        """
-        rows = load_csv_fixture("valid_station_observations.csv")
-
-        # 1. Ingestion Adapter Validation & Normalization
-        clean_measurements = []
-        for r in rows:
-            if r["pollutant"].lower() == "pm25":
-                val = float(r["value"])
-                if val > 0:  # Zero sanitization
-                    clean_measurements.append({
-                        "station_id": r["station_id"],
-                        "coords": (float(r["latitude"]), float(r["longitude"])),
-                        "value": val
-                    })
-
-        assert len(clean_measurements) >= 10
-
-        # 2. Dynamic Spatial Re-Interpolation for 3 unmonitored test district centroids
-        test_centroids = [
-            ("Nankana Sahib", (31.4500, 73.7000)),
-            ("Chiniot", (31.7200, 72.9700)),
-            ("Hafizabad", (32.0600, 73.6800)),
-        ]
-
-        imputed_results = {}
-        for dist_name, coords in test_centroids:
-            val = reference_oracle.discrete_geodesic_idw(
-                target_coords=coords,
-                monitored_nodes=clean_measurements,
-                power=2.0,
-                d0_km=5.0
+        try:
+            # 1. Insert initial observation
+            initial_obs = StationObservation(
+                station_id=test_station,
+                recorded_at=test_ts,
+                pm25=120.5,
+                pm10=210.0,
+                aqi=185,
             )
-            assert val is not None
-            imputed_results[dist_name] = round(val, 2)
+            persistent_repo.add_station_observations([initial_obs])
 
-        assert "Nankana Sahib" in imputed_results
-        assert 100.0 <= imputed_results["Nankana Sahib"] <= 200.0
+            # Verify initial insert
+            fetched = persistent_repo.get_station_hourly_series(
+                station_id=test_station,
+                start_time=test_ts,
+                end_time=test_ts,
+            )
+            assert len(fetched) == 1
+            assert fetched[0].pm25 == 120.5
 
-    def test_scenario_4_cross_border_plume_inflow_analysis(
-        self, load_csv_fixture, reference_oracle: PAQReferenceOracle
-    ):
+            # 2. Upsert updated observation for same composite key (recorded_at, station_id)
+            updated_obs = StationObservation(
+                station_id=test_station,
+                recorded_at=test_ts,
+                pm25=199.9,  # Changed value
+                pm10=305.0,
+                aqi=249,
+            )
+            persistent_repo.add_station_observations([updated_obs])
+
+            # Verify that record was updated, NOT duplicated
+            fetched_after = persistent_repo.get_station_hourly_series(
+                station_id=test_station,
+                start_time=test_ts,
+                end_time=test_ts,
+            )
+            assert len(fetched_after) == 1
+            assert fetched_after[0].pm25 == 199.9
+            assert fetched_after[0].aqi == 249
+        finally:
+            # Cleanup test record & refresh timeline cache
+            with persistent_repo.db.session_scope() as session:
+                session.execute(
+                    text("DELETE FROM station_hourly_observations WHERE station_id = :sid AND recorded_at = :ts"),
+                    {"sid": test_station, "ts": test_ts},
+                )
+            persistent_repo.observations._refresh_timeline_cache()
+
+
+
+# =============================================================================
+# PILLAR 3: SPATIAL ENGINE (PostGIS 3.4 Spatial Types & Geodesic Queries)
+# =============================================================================
+
+class TestSpatialEngine:
+    """Verifies PostGIS spatial queries casting to ::geography to prevent angular degree distortion."""
+
+    def test_nearest_aerodrome_catchment(self, persistent_repo):
         """
-        Scenario 4: Cross-Border Plume Inflow Analysis
-        Simulates stubble-burning easterly plume transported across international border:
-        - Border-belt districts (<120 km) detect easterly winds (inflow sector).
-        - Border normal vector dot products (w . n) > +0.25 m/s confirm inflow into Punjab.
-        - Net mass balance confirms transboundary import.
+        Tests Challenge 2.3 Mitigation:
+        Finding nearest aerodrome using ::geography metric distance.
+        Verifies Lahore centroid (31.5497, 74.3436) resolves to OPLA at ~6.5 km (< 10 km).
         """
-        rows = load_csv_fixture("border_transport_plume.csv")
-        assert len(rows) > 0
+        engine: PostgisSpatialEngine = persistent_repo.spatial_engine
+        assert engine is not None
 
-        # 39 border normal vector node coordinates along Pakistan-India border
-        # Inward normal vectors pointing West-Southwest (e.g. nx ~ -0.9, ny ~ -0.4)
-        border_nodes = [
-            {"id": "NODE_01", "lat": 32.10, "lon": 74.87, "nx": -0.95, "ny": -0.31},  # Narowal border
-            {"id": "NODE_02", "lat": 31.60, "lon": 74.57, "nx": -0.98, "ny": -0.19},  # Wagah / Lahore border
-            {"id": "NODE_03", "lat": 31.11, "lon": 74.45, "nx": -0.92, "ny": -0.39},  # Kasur border
+        nearest = engine.find_nearest_aerodrome(31.5497, 74.3436, max_distance_km=40.0)
+        assert nearest is not None
+        assert nearest["station_id"] == "OPLA"
+        assert nearest["distance_km"] < 10.0
+        assert nearest["distance_km"] > 1.0  # Approx 6.5 km
+
+    def test_stations_within_metric_radius(self, persistent_repo):
+        """Verifies ST_DWithin on ::geography identifies stations within metric radius in km."""
+        engine: PostgisSpatialEngine = persistent_repo.spatial_engine
+        stations_25km = engine.find_stations_within_radius(31.5497, 74.3436, radius_km=25.0)
+
+        assert len(stations_25km) >= 5
+        station_ids = [s["station_id"] for s in stations_25km]
+        assert "OPLA" in station_ids
+        # Must not contain distant Multan or Rawalpindi stations
+        assert "OPMT" not in station_ids
+        assert "OPRN" not in station_ids
+
+    def test_point_in_polygon_containment(self, persistent_repo):
+        """Verifies point-in-polygon containment with MultiPolygon nesting normalization."""
+        engine: PostgisSpatialEngine = persistent_repo.spatial_engine
+        # Coordinates inside Lahore district
+        district = engine.find_district_for_point(31.5497, 74.3436)
+        assert district is not None
+        assert district["district_id"] == 18
+        assert district["name"] == "Lahore"
+
+        # Coordinates inside Rawalpindi (33.6007, 73.0679)
+        rwp = engine.find_district_for_point(33.6007, 73.0679)
+        assert rwp is not None
+        assert rwp["name"] == "Rawalpindi"
+
+    def test_border_corridor_filtering(self, persistent_repo):
+        """Verifies 120km transboundary border corridor district identification."""
+        engine: PostgisSpatialEngine = persistent_repo.spatial_engine
+        border_districts = engine.get_border_districts(max_border_distance_km=120.0)
+        assert len(border_districts) >= 5
+
+        names = [d["name"] for d in border_districts]
+        assert "Lahore" in names
+        assert "Kasur" in names
+        assert "Narowal" in names
+
+
+# =============================================================================
+# PILLAR 4: HIGH-SPEED CACHE & SSE FAN-OUT (Redis 7.2)
+# =============================================================================
+
+class TestHighSpeedCacheAndPubSub:
+    """Verifies Redis caching for IDW grids, CPF roses, flux links, and SSE fan-out."""
+
+    def test_redis_cache_operations(self, persistent_repo):
+        """Verifies key setting, getting, and json serialization in RedisCacheManager."""
+        mgr: RedisCacheManager = persistent_repo.cache_mgr
+        assert mgr is not None
+
+        test_key = "paq:test:integration_key"
+        test_payload = {"status": "ok", "timestamp": "2026-11-13T12:00:00Z", "val": 42.5}
+        mgr.set(test_key, test_payload, ttl_seconds=60)
+
+        retrieved = mgr.get_json(test_key)
+        assert retrieved is not None
+        assert retrieved["status"] == "ok"
+        assert retrieved["val"] == 42.5
+
+        mgr.delete(test_key)
+        assert mgr.get(test_key) is None
+
+    def test_analytics_repository_caching(self, persistent_repo):
+        """Verifies RedisAnalyticsRepository caching and clearing."""
+        analytics: RedisAnalyticsRepository = persistent_repo.analytics
+        now = datetime.now(timezone.utc)
+
+        # 1. Surface grid caching
+        test_grid = [
+            SurfaceGridPoint(x=74.3, y=31.5, value=125.0, nearest_station_km=2.5, alpha=180)
         ]
+        analytics.save_surface_grid(timestamp=now, pollutant="PM2.5", resolution=1, grid=test_grid)
+        cached_grid = analytics.get_surface_grid(timestamp=now, pollutant="PM2.5", resolution=1)
+        assert cached_grid is not None
+        assert len(cached_grid) == 1
+        assert cached_grid[0].value == 125.0
 
-        # Inflow test: Easterly wind blowing West (u = -3.0 m/s, v = 0.0 m/s)
-        u_wind = -3.0
-        v_wind = 0.0
+        # 2. CPF wind rose caching
+        test_cpf = CPFRoseResult(
+            district_id="Lahore",
+            pollutant="PM2.5",
+            threshold=75.0,
+            calm_ratio=0.05,
+            sectors=(0.82, 0.1, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0),
+            sector_counts=(10, 5, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0),
+            sector_exceedances=(8, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0),
+        )
+        analytics.save_cpf_rose(result=test_cpf)
+        cached_cpf = analytics.get_cpf_rose(district_id="Lahore", pollutant="PM2.5")
+        assert cached_cpf is not None
+        assert cached_cpf.threshold == 75.0
+        assert cached_cpf.sectors[0] == 0.82
 
-        inflow_nodes = 0
-        for node in border_nodes:
-            # Dot product: Phi = u * nx + v * ny
-            phi = u_wind * node["nx"] + v_wind * node["ny"]
-            # Phi = (-3.0) * (-0.95) = +2.85 m/s > +0.25 m/s -> Strong Inflow!
-            if phi > 0.25:
-                inflow_nodes += 1
+        # 3. Advection flux caching
+        test_flux = [
+            AdvectionFluxLink(
+                source_district="Amritsar",
+                receptor_district="Lahore",
+                distance_km=45.0,
+                bearing_deg=78.0,
+                divergence_deg=5.0,
+                flux=340.2,
+            )
+        ]
+        analytics.save_advection_flux(timestamp=now, pollutant="PM2.5", links=test_flux)
+        cached_flux = analytics.get_advection_flux(timestamp=now, pollutant="PM2.5")
+        assert cached_flux is not None
+        assert len(cached_flux) == 1
+        assert cached_flux[0].flux == 340.2
 
-        assert inflow_nodes == len(border_nodes), "All border nodes must detect transboundary inflow!"
+        # 4. Transboundary index caching
+        test_tb = TransboundaryResult(
+            timestamp=now,
+            inflow_total=450.0,
+            outflow_total=50.0,
+            net_flux=400.0,
+        )
+        analytics.save_transboundary_result(result=test_tb)
+        cached_tb = analytics.get_transboundary_result(timestamp=now)
+        assert cached_tb is not None
+        assert cached_tb.net_flux == 400.0
 
-    def test_scenario_5_multistation_district_disaggregation(
-        self, load_csv_fixture, reference_oracle: PAQReferenceOracle
-    ):
-        """
-        Scenario 5: Multi-Station District Disaggregation (Lahore 13 Stations vs Single Station)
-        - Verifies that in dense urban districts (Lahore), the P75 criterion threshold tau
-          is evaluated on the POOLED set of individual station-hour observations,
-          preserving localized emission hot spots (e.g. Wagah Border, Kot Lakhpat)
-          which would be flattened by computing on smoothed district-wide means.
-        """
-        rows = load_csv_fixture("multistation_lahore_cluster.csv")
-        assert len(rows) == 13  # 13 distinct stations in Lahore
+        # 5. Invalidate / clear cache
+        analytics.clear_cache()
+        assert analytics.get_surface_grid(timestamp=now, pollutant="PM2.5", resolution=1) is None
+        assert analytics.get_cpf_rose(district_id="Lahore", pollutant="PM2.5") is None
 
-        lahore_values = [float(r["value"]) for r in rows]
+    @pytest.mark.anyio
+    async def test_redis_pubsub_fanout(self, persistent_repo):
+        """Verifies publishing on telemetry channel fans out to subscribers."""
+        mgr: RedisCacheManager = persistent_repo.cache_mgr
+        import asyncio
+        subscriber_queue = asyncio.Queue()
+        mgr._local_subscribers.append(subscriber_queue)
 
-        # 1. District smoothed arithmetic mean
-        district_mean = sum(lahore_values) / len(lahore_values)
-        assert 220.0 <= district_mean <= 240.0
+        packet = {"event": "hourly_update", "mean_aqi": 185.2, "status": "published"}
+        mgr.publish("channel:telemetry:hourly", packet)
 
-        # 2. Localized hotspots are preserved in individual station records
-        max_hotspot = max(lahore_values)  # Wagah Border = 360.0
-        min_background = min(lahore_values)  # DHA Phase 5 = 165.0
-        assert max_hotspot == 360.0
-        assert min_background == 165.0
-        assert max_hotspot - min_background > 150.0  # Demonstrates spatial gradient
+        raw = await asyncio.wait_for(subscriber_queue.get(), timeout=2.0)
+        data = json.loads(raw) if isinstance(raw, (str, bytes)) else raw
+        assert data["event"] == "hourly_update"
+        assert data["mean_aqi"] == 185.2
 
-        # 3. Pooled P75 evaluation
-        sorted_values = sorted(lahore_values)
-        p75_index = int(0.75 * (len(sorted_values) - 1))
-        pooled_tau = sorted_values[p75_index]
-        assert pooled_tau > district_mean, "Pooled P75 must capture upper quantile gradients"
+
+# =============================================================================
+# PILLAR 5: CONTINUOUS ROLLUPS (Automated Continuous Aggregates)
+# =============================================================================
+
+class TestContinuousRollups:
+    """Verifies continuous aggregate rollup queries for hourly and daily rollups."""
+
+    def test_continuous_hourly_district_rollups(self, persistent_repo):
+        """Verifies hourly rollup query computes reporting count, mean PM2.5, and vector wind."""
+        service: ContinuousRollupService = persistent_repo.continuous_rollups
+        assert service is not None
+
+        rollups = service.get_hourly_rollups(district="Lahore", limit=24)
+        assert len(rollups) > 0
+        assert len(rollups) <= 24
+
+        first = rollups[0]
+        assert "timestamp" in first
+        assert "pm25" in first
+        assert "u" in first
+        assert "v" in first
+        assert "reporting_count" in first
+        assert first["reporting_count"] >= 1
+
+    def test_continuous_daily_district_rollups(self, persistent_repo):
+        """Verifies daily rollup query computes daily min, max, mean PM2.5 and peak AQI."""
+        service: ContinuousRollupService = persistent_repo.continuous_rollups
+        daily = service.get_daily_rollups(district="Lahore", limit=7)
+
+        assert len(daily) > 0
+        first = daily[0]
+        assert "date" in first
+        assert "avg_pm25" in first
+        assert "max_aqi" in first
+        assert "min_pm25" in first
+        assert "max_pm25" in first
+        assert first["max_pm25"] >= first["min_pm25"]
+        assert first["max_aqi"] > 0
+
+
+# =============================================================================
+# PILLAR 6: END-TO-END FASTAPI GATEWAY INTEGRATION
+# =============================================================================
+
+class TestFastApiEndToEndGateway:
+    """Verifies all endpoints served through FastAPI with persistent repository backend."""
+
+    @pytest.mark.anyio
+    async def test_health_check_endpoint(self, app):
+        """GET /health returns healthy status."""
+        async with httpx.AsyncClient(transport=ASGITransport(app=app), base_url="http://testserver") as client:
+            resp = await client.get("/health")
+            assert resp.status_code == 200
+            data = resp.json()
+            assert data["status"] == "healthy"
+            assert data["service"] == "punjab-air-quality-api"
+
+    @pytest.mark.anyio
+    async def test_districts_metadata_endpoint(self, app):
+        """GET /api/v1/meta/districts returns 41 districts."""
+        async with httpx.AsyncClient(transport=ASGITransport(app=app), base_url="http://testserver") as client:
+            resp = await client.get("/api/v1/meta/districts")
+            assert resp.status_code == 200
+            data = resp.json()
+            assert isinstance(data, list)
+            assert len(data) == 41
+
+    @pytest.mark.anyio
+    async def test_continuous_hourly_rollup_endpoint(self, app):
+        """GET /api/v1/analytics/rollups/hourly returns hourly rollups."""
+        async with httpx.AsyncClient(transport=ASGITransport(app=app), base_url="http://testserver") as client:
+            resp = await client.get("/api/v1/analytics/rollups/hourly?district=Lahore")
+            assert resp.status_code == 200
+            data = resp.json()
+            assert isinstance(data, list)
+            assert len(data) > 0
+            assert "timestamp" in data[0]
+            assert "pm25" in data[0]
+            assert "reporting_count" in data[0]
+
+    @pytest.mark.anyio
+    async def test_continuous_daily_rollup_endpoint(self, app):
+        """GET /api/v1/analytics/rollups/daily returns daily continuous aggregate rollups."""
+        async with httpx.AsyncClient(transport=ASGITransport(app=app), base_url="http://testserver") as client:
+            resp = await client.get("/api/v1/analytics/rollups/daily?district=Lahore")
+            assert resp.status_code == 200
+            data = resp.json()
+            assert isinstance(data, list)
+            assert len(data) > 0
+            assert "date" in data[0]
+            assert "avg_pm25" in data[0]
+            assert "max_aqi" in data[0]
+
+    @pytest.mark.anyio
+    async def test_sse_live_stream_endpoint(self, app):
+        """GET /api/v1/stream/live?max_events=1 returns Server-Sent Events stream frame."""
+        async with httpx.AsyncClient(transport=ASGITransport(app=app), base_url="http://testserver") as client:
+            resp = await client.get("/api/v1/stream/live?max_events=1")
+            assert resp.status_code == 200
+            assert "text/event-stream" in resp.headers["content-type"]
+            text_data = resp.text
+            assert "event: hourly_update" in text_data
+            assert "data:" in text_data

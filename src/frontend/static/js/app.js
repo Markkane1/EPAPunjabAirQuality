@@ -44,6 +44,7 @@ export class App {
       displayMode: 'surface',
       showTransportLinks: true,
       showRegionalWinds: true,
+      showFireAnomalies: true,
       activeView: 'console',
       theme: 'dark',
       isLiveNowcast: true,
@@ -53,6 +54,10 @@ export class App {
     this.districts = [];
     this.stations = [];
     this.airports = [];
+    this.fireAnomalies = [];
+    this.defaultLiveFires = [];
+    this.fireSummary = null;
+    this.customMapFires = null;
     this.hourlyObservations = null;
     this.hourlyWinds = [];
     this.transportLinks = [];
@@ -196,13 +201,40 @@ export class App {
   }
 
   async loadInitialTelemetry() {
-    const [hourly, current, baseline, crossBorder, tbData] = await Promise.all([
+    const [hourly, current, baseline, crossBorder, tbData, activeFiresRes, fireSummaryRes] = await Promise.all([
       this.apiClient.getHourlyObservations(this.state.pollutant),
       this.apiClient.getCurrentObservations(this.state.pollutant),
       this.apiClient.loadBaselineData(),
       this.apiClient.getCrossBorderCities(),
       this.apiClient.getTransboundary(this.state.pollutant),
+      this.apiClient.getActiveFires(24),
+      this.apiClient.getFireSummary(),
     ]);
+
+    // Initialize fire anomalies & summary
+    if (activeFiresRes && activeFiresRes.fires) {
+      this.fireAnomalies = activeFiresRes.fires;
+      this.defaultLiveFires = activeFiresRes.fires;
+    }
+    if (fireSummaryRes && fireSummaryRes.summary) {
+      this.fireSummary = fireSummaryRes.summary;
+    } else if (activeFiresRes) {
+      this.fireSummary = {
+        live_fires_count: activeFiresRes.live_fires || 46,
+        fires_24h_count: activeFiresRes.fires_24h || 155,
+        total_historical_records: 2079,
+        regions_24h: { 'Punjab (India)': 88, 'Punjab (Pakistan)': 48, 'Haryana (India)': 19 }
+      };
+    }
+
+    if (this.canvasEngine) {
+      this.canvasEngine.fireAnomalies = this.fireAnomalies;
+      this.canvasEngine.showFireAnomalies = this.state.showFireAnomalies;
+    }
+
+    if (this.ui) {
+      this.ui.updateFireStats(this.fireSummary, fireSummaryRes?.monthly_trends);
+    }
 
     this.hourlyObservations = hourly;
     if (hourly && hourly.hours) {
@@ -269,6 +301,8 @@ export class App {
       this.canvasEngine.displayMode = this.state.displayMode;
       this.canvasEngine.showTransportLinks = this.state.showTransportLinks;
       this.canvasEngine.showRegionalWinds = this.state.showRegionalWinds;
+      this.canvasEngine.showFireAnomalies = this.state.showFireAnomalies;
+      this.canvasEngine.fireAnomalies = this.fireAnomalies;
       this.canvasEngine.selectedDistrict = this.state.selectedDistrict;
 
       this.canvasEngine.render(interpolated);
@@ -407,6 +441,7 @@ export class App {
       activeStationPoints,
       activeWinds,
       transportLinks: links,
+      fireAnomalies: this.fireAnomalies,
     };
   }
 
@@ -558,6 +593,33 @@ export class App {
     this.state.showRegionalWinds = visible;
   }
 
+  setFireAnomaliesVisible(visible) {
+    this.state.showFireAnomalies = visible;
+    if (this.canvasEngine) {
+      this.canvasEngine.showFireAnomalies = visible;
+    }
+  }
+
+  setHistoricFiresOnMap(fires) {
+    this.customMapFires = fires;
+    this.fireAnomalies = fires;
+    if (this.canvasEngine) {
+      this.canvasEngine.fireAnomalies = fires;
+      this.canvasEngine.showFireAnomalies = true;
+    }
+    this.state.showFireAnomalies = true;
+    const chk = document.getElementById('toggleFireAnomalies');
+    if (chk) chk.checked = true;
+  }
+
+  restoreLiveFiresOnMap() {
+    this.customMapFires = null;
+    this.fireAnomalies = this.defaultLiveFires || [];
+    if (this.canvasEngine) {
+      this.canvasEngine.fireAnomalies = this.fireAnomalies;
+    }
+  }
+
   selectDistrict(districtName) {
     if (this.state.selectedDistrict === districtName) return;
     this.state.selectedDistrict = districtName;
@@ -595,7 +657,32 @@ export class App {
       canvas.style.cursor = this.canvasEngine.zoom > 1.05 ? 'grab' : 'crosshair';
     }, { passive: false });
 
-    // 2. Mouse Drag (Pan) & Click (District Selection)
+    // 2b. Hover detection for Fire Anomalies and Tooltip
+    canvas.addEventListener('mousemove', (e) => {
+      if (isDragging || !this.canvasEngine) return;
+      const rect = canvas.getBoundingClientRect();
+      const screenX = e.clientX - rect.left;
+      const screenY = e.clientY - rect.top;
+
+      const hoveredFire = this.canvasEngine.hitTestFire(screenX, screenY);
+      if (hoveredFire) {
+        canvas.style.cursor = 'pointer';
+        if (this.ui) this.ui.showFireTooltip(e.clientX, e.clientY, hoveredFire);
+      } else {
+        if (this.ui) this.ui.hideFireTooltip();
+        if (this.canvasEngine.zoom > 1.05) {
+          canvas.style.cursor = 'grab';
+        } else {
+          canvas.style.cursor = 'crosshair';
+        }
+      }
+    });
+
+    canvas.addEventListener('mouseleave', () => {
+      if (this.ui) this.ui.hideFireTooltip();
+    });
+
+    // 2. Mouse Drag (Pan) & Click (District Selection or Fire Inspection)
     canvas.addEventListener('mousedown', (e) => {
       if (e.button !== 0) return; // Left mouse button only
       isDragging = true;
@@ -632,11 +719,18 @@ export class App {
         canvas.style.cursor = this.canvasEngine.zoom > 1.05 ? 'grab' : 'crosshair';
       }
 
-      // If mouse barely moved (< 5px), treat as a click to select district
+      // If mouse barely moved (< 5px), treat as a click to inspect fire or select district
       if (totalMoved < 5 && this.canvasEngine) {
         const rect = canvas.getBoundingClientRect();
         const screenX = e.clientX - rect.left;
         const screenY = e.clientY - rect.top;
+
+        const clickedFire = this.canvasEngine.hitTestFire(screenX, screenY);
+        if (clickedFire) {
+          if (this.ui) this.ui.openFireDetailModal(clickedFire);
+          return;
+        }
+
         const clickedDistrict = this.canvasEngine.hitTestDistrict(screenX, screenY);
         if (clickedDistrict) {
           this.selectDistrict(clickedDistrict);

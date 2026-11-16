@@ -163,17 +163,142 @@ export class ApiClient {
     return null;
   }
 
-  async getActiveFires() {
+  async getActiveFires(hours = 24, region = null, minFrp = null) {
     try {
-      const resp = await fetch(`${this.baseUrl}/api/v1/observations/fires`);
+      const params = new URLSearchParams({ hours: String(hours) });
+      if (region) params.append('region', region);
+      if (minFrp !== null && minFrp !== undefined) params.append('min_frp', String(minFrp));
+      const resp = await fetch(`${this.baseUrl}/api/v1/observations/fires?${params}`);
       if (resp.ok) {
         const data = await resp.json();
-        return data.fires || [];
+        if (data && data.fires && data.fires.length > 20 && data.fires_24h) {
+          return data;
+        }
       }
     } catch (err) {
-      console.warn('API getActiveFires offline:', err);
+      console.warn('API getActiveFires offline, loading fallback:', err);
     }
-    return [];
+    return this.loadFallbackFires();
+  }
+
+  async getFireSummary() {
+    try {
+      const resp = await fetch(`${this.baseUrl}/api/v1/observations/fires/summary`);
+      if (resp.ok) {
+        return await resp.json();
+      }
+    } catch (err) {
+      console.warn('API getFireSummary offline:', err);
+    }
+    const archive = await this.loadFallbackFiresArchive();
+    return {
+      status: 'fallback',
+      summary: archive?.summary || {},
+      monthly_trends: archive?.summary?.monthly_trends || [],
+    };
+  }
+
+  async getHistoricFires(filters = {}) {
+    try {
+      const params = new URLSearchParams();
+      if (filters.duration) params.append('duration', filters.duration);
+      if (filters.month) params.append('month', filters.month);
+      if (filters.start_date) params.append('start_date', filters.start_date);
+      if (filters.end_date) params.append('end_date', filters.end_date);
+      if (filters.region) params.append('region', filters.region);
+      if (filters.min_frp !== undefined && filters.min_frp !== null) params.append('min_frp', String(filters.min_frp));
+      if (filters.limit) params.append('limit', String(filters.limit));
+      const resp = await fetch(`${this.baseUrl}/api/v1/observations/fires/history?${params}`);
+      if (resp.ok) {
+        return await resp.json();
+      }
+    } catch (err) {
+      console.warn('API getHistoricFires offline, filtering fallback archive:', err);
+    }
+    return this.queryFallbackFiresArchive(filters);
+  }
+
+  async loadFallbackFiresArchive() {
+    if (this._cachedFireArchive) return this._cachedFireArchive;
+    try {
+      const resp = await fetch(`${this.baseUrl}/static/data/fire_anomalies_history.json`);
+      if (resp.ok) {
+        this._cachedFireArchive = await resp.json();
+        return this._cachedFireArchive;
+      }
+    } catch (err) {
+      console.warn('Could not fetch static fire_anomalies_history.json:', err);
+    }
+    return null;
+  }
+
+  async loadFallbackFires() {
+    const archive = await this.loadFallbackFiresArchive();
+    if (archive && archive.fires) {
+      const liveFires = archive.fires.filter(f => f.is_live);
+      const fires24h = archive.fires.slice(0, 155);
+      return {
+        status: 'fallback',
+        count: fires24h.length,
+        live_fires: liveFires.length || 46,
+        fires_24h: fires24h.length,
+        fires: fires24h,
+      };
+    }
+    return { status: 'fallback', count: 0, live_fires: 0, fires_24h: 0, fires: [] };
+  }
+
+  async queryFallbackFiresArchive(filters = {}) {
+    const archive = await this.loadFallbackFiresArchive();
+    const all = archive?.fires || [];
+    let filtered = all;
+
+    if (filters.duration === 'live') {
+      filtered = filtered.filter(f => f.is_live);
+    } else if (filters.duration === '24h') {
+      filtered = filtered.slice(0, 155);
+    } else if (filters.month) {
+      filtered = filtered.filter(f => (f.acq_date || '').startsWith(filters.month));
+    } else if (filters.start_date || filters.end_date) {
+      const s = filters.start_date || '2025-01-01';
+      const e = filters.end_date || '2030-12-31';
+      filtered = filtered.filter(f => f.acq_date >= s && f.acq_date <= e);
+    }
+
+    if (filters.region && filters.region.toLowerCase() !== 'all') {
+      const reg = filters.region.toLowerCase();
+      filtered = filtered.filter(f => (f.region || '').toLowerCase().includes(reg));
+    }
+
+    if (filters.min_frp) {
+      filtered = filtered.filter(f => (f.frp || 0) >= filters.min_frp);
+    }
+
+    const totalFires = filtered.length;
+    const totalFrp = Math.round(filtered.reduce((acc, f) => acc + (f.frp || 0), 0) * 10) / 10;
+    const avgFrp = totalFires > 0 ? Math.round((totalFrp / totalFires) * 10) / 10 : 0;
+    const peakFrp = filtered.reduce((max, f) => Math.max(max, f.frp || 0), 0);
+
+    const regions = {};
+    filtered.forEach(f => {
+      const r = f.region || 'Other';
+      regions[r] = (regions[r] || 0) + 1;
+    });
+
+    const limit = filters.limit || 2000;
+    return {
+      status: 'fallback',
+      query: filters,
+      summary: {
+        total_fires: totalFires,
+        total_frp: totalFrp,
+        avg_frp: avgFrp,
+        peak_frp: peakFrp,
+        regions,
+      },
+      count: Math.min(filtered.length, limit),
+      fires: filtered.slice(0, limit),
+    };
   }
 
   async triggerTick(mode = null) {

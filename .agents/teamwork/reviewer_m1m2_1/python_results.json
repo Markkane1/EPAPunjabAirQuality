@@ -1,0 +1,45 @@
+{
+  "haversine": 259.82335617931517,
+  "bearing": 331.4072778477755,
+  "back_bearing": 150.68534670491056,
+  "divergence": 90.0,
+  "idw": 180.1350717655004,
+  "wind_polar_to_cart": [
+    8.838834764831843,
+    8.838834764831846
+  ],
+  "wind_cart_to_polar": [
+    12.499950835103313,
+    225.0
+  ],
+  "flux_pm25": {
+    "flux": 292.4916,
+    "distance_km": 55.6,
+    "bearing_deg": 0.0,
+    "divergence_deg": 0.0
+  },
+  "flux_aqi_guard": null,
+  "aqi_pm25_120": 186,
+  "aqi_pm25_450_clamp": 500,
+  "composite_aqi": 155,
+  "qc_clean": [
+    [
+      10.0,
+      15.0,
+      12.0,
+      14.0,
+      15.0,
+      null,
+      16.0,
+      14.0,
+      15.0
+    ],
+    1
+  ],
+  "completeness": 23.333333333333332,
+  "subhourly": 22.5,
+  "projection": [
+    948.9383458646616,
+    585.162260011981
+  ]
+}

@@ -1,0 +1,693 @@
+{
+  "geodesy": [
+    {
+      "dist": 0,
+      "fwd_bearing": 0,
+      "back_bearing": 0,
+      "ang_div": 0,
+      "sector": 0,
+      "sector_deg": 0
+    },
+    {
+      "dist": 310.08715545548205,
+      "fwd_bearing": 241.47704335519518,
+      "back_bearing": 60.02404079150159,
+      "ang_div": 175,
+      "sector": 0,
+      "sector_deg": 337.5
+    },
+    {
+      "dist": 819.6077654021167,
+      "fwd_bearing": 34.27808196633441,
+      "back_bearing": 216.858008152557,
+      "ang_div": 2,
+      "sector": 1,
+      "sector_deg": 22.5
+    },
+    {
+      "dist": 7362.692920032808,
+      "fwd_bearing": 62.790151416761205,
+      "back_bearing": 248.75434628247797,
+      "ang_div": 180,
+      "sector": 0,
+      "sector_deg": 337.5
+    },
+    {
+      "dist": 0,
+      "fwd_bearing": 0,
+      "back_bearing": 0,
+      "ang_div": 180,
+      "sector": 8,
+      "sector_deg": 180
+    }
+  ],
+  "idw": [
+    {
+      "scalar": 150.00427115927408,
+      "vector": [
+        2.073169213714313,
+        -0.978303690675469
+      ],
+      "opacity": 235,
+      "anisotropic": [
+        140.92223684107762,
+        6472.356603278284,
+        95
+      ]
+    },
+    {
+      "scalar": 147.4781016404823,
+      "vector": [
+        0.960128948516361,
+        0.3736582906149442
+      ],
+      "opacity": 235,
+      "anisotropic": [
+        120.07129600640923,
+        0,
+        235
+      ]
+    },
+    {
+      "scalar": 148.06489786006546,
+      "vector": [
+        0.9750322586496856,
+        0.3573991211839357
+      ],
+      "opacity": 165,
+      "anisotropic": [
+        157.80325572488746,
+        43346.885701281935,
+        95
+      ]
+    },
+    {
+      "scalar": 153.6827342182631,
+      "vector": [
+        1.0528041434489464,
+        0.2810707165121649
+      ],
+      "opacity": 95,
+      "anisotropic": [
+        239.8043999620043,
+        0,
+        235
+      ]
+    },
+    {
+      "scalar": 153.0266003512349,
+      "vector": [
+        1.0425784585586946,
+        0.29138166293237866
+      ],
+      "opacity": 95,
+      "anisotropic": [
+        128.58200507300285,
+        12410.177275123833,
+        95
+      ]
+    }
+  ],
+  "wind": [
+    {
+      "blacklisted": false,
+      "valid": true,
+      "calm": false,
+      "polar_to_cart": [
+        -5,
+        0
+      ],
+      "cart_to_polar": [
+        5,
+        270
+      ],
+      "bearing": 90
+    },
+    {
+      "blacklisted": false,
+      "valid": true,
+      "calm": true,
+      "polar_to_cart": [
+        0,
+        0
+      ],
+      "cart_to_polar": [
+        0,
+        0
+      ],
+      "bearing": 0
+    },
+    {
+      "blacklisted": false,
+      "valid": true,
+      "calm": true,
+      "polar_to_cart": [
+        0,
+        0.49
+      ],
+      "cart_to_polar": [
+        0.49,
+        0
+      ],
+      "bearing": 180
+    },
+    {
+      "blacklisted": false,
+      "valid": true,
+      "calm": false,
+      "polar_to_cart": [
+        0.5,
+        0
+      ],
+      "cart_to_polar": [
+        0.5,
+        90
+      ],
+      "bearing": 270
+    },
+    {
+      "blacklisted": false,
+      "valid": true,
+      "calm": false,
+      "polar_to_cart": [
+        -21.213203435596423,
+        -21.213203435596427
+      ],
+      "cart_to_polar": [
+        2.8284271247461903,
+        225
+      ],
+      "bearing": 45
+    },
+    {
+      "blacklisted": false,
+      "valid": false,
+      "calm": false,
+      "polar_to_cart": null,
+      "cart_to_polar": [
+        5,
+        180
+      ],
+      "bearing": 0
+    },
+    {
+      "blacklisted": true,
+      "valid": false,
+      "calm": false,
+      "polar_to_cart": null,
+      "cart_to_polar": [
+        10,
+        90
+      ],
+      "bearing": 270
+    },
+    {
+      "blacklisted": true,
+      "valid": false,
+      "calm": false,
+      "polar_to_cart": null,
+      "cart_to_polar": [
+        7.0710678118654755,
+        135
+      ],
+      "bearing": 315
+    },
+    {
+      "blacklisted": true,
+      "valid": false,
+      "calm": false,
+      "polar_to_cart": null,
+      "cart_to_polar": [
+        1.4142135623730951,
+        315
+      ],
+      "bearing": 135
+    }
+  ],
+  "cpf": [
+    {
+      "p75": 220,
+      "rose": {
+        "sectors": [
+          null,
+          null,
+          null,
+          null,
+          0.3333,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null
+        ],
+        "calm_ratio": 0.1,
+        "threshold": 220,
+        "sector_counts": [
+          0,
+          0,
+          0,
+          0,
+          6,
+          0,
+          0,
+          0,
+          3,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0
+        ],
+        "sector_exceedances": [
+          0,
+          0,
+          0,
+          0,
+          2,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0
+        ]
+      }
+    },
+    {
+      "p75": 220,
+      "rose": {
+        "sectors": [
+          null,
+          null,
+          null,
+          null,
+          0.6667,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null
+        ],
+        "calm_ratio": 0.1,
+        "threshold": 150,
+        "sector_counts": [
+          0,
+          0,
+          0,
+          0,
+          6,
+          0,
+          0,
+          0,
+          3,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0
+        ],
+        "sector_exceedances": [
+          0,
+          0,
+          0,
+          0,
+          4,
+          0,
+          0,
+          0,
+          2,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0
+        ]
+      }
+    }
+  ],
+  "flux": [
+    {
+      "flux": {
+        "flux": 365.4213,
+        "distance_km": 14.61,
+        "bearing_deg": 40.41,
+        "divergence_deg": 4.59
+      }
+    },
+    {
+      "flux": null
+    },
+    {
+      "flux": null
+    },
+    {
+      "flux": null
+    },
+    {
+      "flux": null
+    }
+  ],
+  "transboundary": [
+    {
+      "district_flux": 233.64023492142147,
+      "normal_flux": -2
+    },
+    {
+      "district_flux": -268.12801841425573,
+      "normal_flux": -2
+    },
+    {
+      "district_flux": 0,
+      "normal_flux": -1.414
+    },
+    {
+      "district_flux": 0,
+      "normal_flux": 0.1
+    }
+  ],
+  "pepc_aqi": [
+    {
+      "aqi": 40,
+      "composite": 40,
+      "category": "Good",
+      "color": "#00B050",
+      "peqs_rgb": [
+        142,
+        198,
+        63
+      ]
+    },
+    {
+      "aqi": 100,
+      "composite": 120,
+      "category": "Moderate",
+      "color": "#FFFF00",
+      "peqs_rgb": [
+        227,
+        87,
+        41
+      ]
+    },
+    {
+      "aqi": 150,
+      "composite": 150,
+      "category": "Unhealthy (Sensitive)",
+      "color": "#ED7D31",
+      "peqs_rgb": [
+        142,
+        59,
+        143
+      ]
+    },
+    {
+      "aqi": 200,
+      "composite": 200,
+      "category": "Unhealthy",
+      "color": "#FF0000",
+      "peqs_rgb": [
+        90,
+        21,
+        48
+      ]
+    },
+    {
+      "aqi": 300,
+      "composite": 85,
+      "category": "Very Unhealthy",
+      "color": "#7030A0",
+      "peqs_rgb": [
+        90,
+        21,
+        48
+      ]
+    },
+    {
+      "aqi": 400,
+      "composite": null,
+      "category": "Hazardous",
+      "color": "#C00000",
+      "peqs_rgb": [
+        58,
+        165,
+        93
+      ]
+    },
+    {
+      "aqi": 500,
+      "composite": 500,
+      "category": "Hazardous",
+      "color": "#C00000",
+      "peqs_rgb": [
+        90,
+        21,
+        48
+      ]
+    },
+    {
+      "aqi": 500,
+      "composite": 500,
+      "category": "Hazardous",
+      "color": "#C00000",
+      "peqs_rgb": [
+        142,
+        59,
+        143
+      ]
+    },
+    {
+      "aqi": 0,
+      "composite": 0,
+      "category": "Unknown",
+      "color": "#808080",
+      "peqs_rgb": [
+        58,
+        165,
+        93
+      ]
+    },
+    {
+      "aqi": null,
+      "composite": 0,
+      "category": "Unknown",
+      "color": "#808080",
+      "peqs_rgb": [
+        58,
+        165,
+        93
+      ]
+    }
+  ],
+  "qc": [
+    {
+      "clean": [
+        [
+          10,
+          12,
+          11,
+          null,
+          13,
+          12,
+          14,
+          25,
+          25,
+          null,
+          30,
+          32,
+          null,
+          null,
+          null,
+          35
+        ],
+        1
+      ],
+      "completeness": 25.933333333333334,
+      "lerp": 81.5
+    },
+    {
+      "clean": [
+        [
+          100,
+          100,
+          100,
+          100
+        ],
+        0
+      ],
+      "completeness": 100,
+      "lerp": 100
+    }
+  ],
+  "projection": [
+    {
+      "proj": [
+        884.2105263157897,
+        694.7170305222105
+      ],
+      "unproj": [
+        31,
+        74
+      ],
+      "collision": true
+    },
+    {
+      "proj": [
+        162.40601503759484,
+        1326.2779673605844
+      ],
+      "unproj": [
+        28,
+        70
+      ],
+      "collision": false
+    },
+    {
+      "proj": [
+        1064.6616541353385,
+        63.15609368383678
+      ],
+      "unproj": [
+        34,
+        75
+      ],
+      "collision": true
+    }
+  ],
+  "normalizer": {
+    "centroid": [
+      [
+        72.501,
+        33.669
+      ],
+      [
+        73.197,
+        29.81
+      ],
+      [
+        71.728,
+        29.389
+      ],
+      [
+        71.08,
+        31.617
+      ],
+      [
+        72.827,
+        32.808
+      ]
+    ],
+    "winds": [
+      {
+        "state": "dropout",
+        "speed": null,
+        "direction": null,
+        "u": null,
+        "v": null,
+        "blacklisted": false
+      },
+      {
+        "state": "calm",
+        "speed": 0.2,
+        "direction": 180,
+        "u": 0,
+        "v": 0,
+        "blacklisted": false
+      },
+      {
+        "state": "active",
+        "speed": 2.5,
+        "direction": 90,
+        "u": -2.5,
+        "v": 0,
+        "blacklisted": false
+      },
+      {
+        "state": "blacklisted",
+        "speed": null,
+        "direction": null,
+        "u": null,
+        "v": null,
+        "blacklisted": true,
+        "blacklistReason": "ANEMOMETER BLACKLISTED (VANE OFFSET)"
+      },
+      {
+        "state": "blacklisted",
+        "speed": null,
+        "direction": null,
+        "u": null,
+        "v": null,
+        "blacklisted": true,
+        "blacklistReason": "ANEMOMETER BLACKLISTED (VANE OFFSET)"
+      }
+    ],
+    "est": [
+      {
+        "is_est": false,
+        "hatching": false
+      },
+      {
+        "is_est": false,
+        "hatching": false
+      },
+      {
+        "is_est": false,
+        "hatching": false
+      },
+      {
+        "is_est": false,
+        "hatching": false
+      },
+      {
+        "is_est": false,
+        "hatching": false
+      },
+      {
+        "is_est": false,
+        "hatching": false
+      },
+      {
+        "is_est": false,
+        "hatching": false
+      },
+      {
+        "is_est": false,
+        "hatching": false
+      },
+      {
+        "is_est": false,
+        "hatching": false
+      },
+      {
+        "is_est": false,
+        "hatching": false
+      }
+    ],
+    "counts": {
+      "fixed": 74,
+      "mobile": 5,
+      "total": 79
+    }
+  }
+}

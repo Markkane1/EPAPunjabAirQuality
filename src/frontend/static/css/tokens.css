@@ -1387,3 +1387,53 @@ table.heatmap-table td.active-col {
   font-size: 11px;
   color: #ff5e5e;
 }
+
+/* ====================================================================
+   NASA FIRMS ACTIVE FIRE ANOMALIES & HISTORICAL ARCHIVE STYLES
+   ==================================================================== */
+
+.fire-species-btn {
+  border-color: rgba(255, 87, 34, 0.4) !important;
+  background: rgba(255, 87, 34, 0.08) !important;
+}
+
+.fire-species-btn:hover {
+  background: rgba(255, 87, 34, 0.18) !important;
+  border-color: #ff5722 !important;
+}
+
+.fire-preset-btn {
+  background: var(--bg-card);
+  color: var(--ink-secondary);
+  border: 1px solid var(--border-subtle);
+  padding: 4px 10px;
+  border-radius: 4px;
+  font-family: var(--font-mono);
+  font-size: 11px;
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+
+.fire-preset-btn:hover {
+  background: var(--bg-hover);
+  color: var(--ink-primary);
+  border-color: var(--accent);
+}
+
+.fire-preset-btn.active {
+  background: #ff5722;
+  color: #ffffff;
+  border-color: #ff3d00;
+  font-weight: 700;
+  box-shadow: 0 0 10px rgba(255, 87, 34, 0.4);
+}
+
+.fire-hud-tooltip {
+  pointer-events: none;
+  transition: opacity 0.1s ease;
+  backdrop-filter: blur(8px);
+}
+
+.fire-chart-col:hover .fire-bar {
+  transform: scaleY(1.04);
+}

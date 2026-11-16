@@ -15,7 +15,7 @@ from typing import Any, Dict, List
 
 PROJECT_ROOT = Path(__file__).resolve().parent.parent.parent
 E2E_DIR = PROJECT_ROOT / "tests" / "e2e"
-REPORT_PATH = PROJECT_ROOT / "test_results_e2e.json"
+REPORT_PATH = E2E_DIR / "test_results_e2e.json"
 
 
 TIER_MAPPING = {

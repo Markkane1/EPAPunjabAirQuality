@@ -164,7 +164,7 @@ async def test_sse_stream_dual_keepalive_framing_integrity(monkeypatch):
     monkeypatch.setattr(stream_route, "POLL_CHECK_INTERVAL_SECONDS", 0.02)
 
     async def inject_newer_observation():
-        await asyncio.sleep(0.08)
+        await asyncio.sleep(0.18)
         latest_ts = repo.get_latest_timestamp()
         new_ts = latest_ts + timedelta(hours=1)
         stn = repo.list_stations()[0]

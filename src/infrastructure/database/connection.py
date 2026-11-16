@@ -3,9 +3,13 @@ Database Connection and Session Management for Punjab Air Quality Relational Cor
 Supports PostgreSQL 16 with psycopg driver and SQLite for zero-config portable testing.
 """
 from contextlib import contextmanager
+import atexit
 import logging
 import os
 from pathlib import Path
+import socket
+import subprocess
+import time
 from typing import Any, Generator, Optional
 from sqlalchemy import create_engine, text
 from sqlalchemy.engine import Engine
@@ -48,6 +52,7 @@ class DatabaseManager:
     """Manages SQLAlchemy Engine, Session pooling, and database health probes."""
 
     _instance: Optional["DatabaseManager"] = None
+    _postgres_proc: Optional[subprocess.Popen] = None
 
     def __init__(self, config: Optional[DatabaseConfig] = None) -> None:
         self.config = config or DatabaseConfig()
@@ -62,6 +67,49 @@ class DatabaseManager:
             cls._instance = cls(config=config)
         return cls._instance
 
+    def _try_autostart_local_postgres(self) -> None:
+        """Autostarts local dedicated PostgreSQL 16 server if available on disk."""
+        bin_path = os.getenv("POSTGRES_BIN", r"C:\Users\Asif\Tools\postgresql-16.15\pgsql\bin\postgres.exe")
+        data_path = os.getenv("POSTGRES_DATA", r"C:\Users\Asif\Tools\postgresql-16.15\data")
+        port = str(self.config.port)
+
+        if os.path.exists(bin_path) and os.path.exists(data_path):
+            try:
+                # Check if port is already open
+                sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+                sock.settimeout(0.3)
+                is_open = (sock.connect_ex((self.config.host, self.config.port)) == 0)
+                sock.close()
+                if is_open:
+                    return
+
+                logger.info(f"Autostarting local PostgreSQL 16 on port {port}...")
+                proc = subprocess.Popen(
+                    [bin_path, "-D", data_path, "-p", port],
+                    stdout=subprocess.DEVNULL,
+                    stderr=subprocess.DEVNULL,
+                )
+                DatabaseManager._postgres_proc = proc
+                atexit.register(lambda: proc.terminate() if proc.poll() is None else None)
+
+                # Wait for port and postmaster startup to complete (up to 5 seconds)
+                for _ in range(25):
+                    time.sleep(0.2)
+                    try:
+                        sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+                        sock.settimeout(0.2)
+                        res = sock.connect_ex((self.config.host, self.config.port))
+                        sock.close()
+                        if res == 0:
+                            time.sleep(0.5)
+                            logger.info("Local PostgreSQL 16 is ready for connections.")
+                            break
+                    except Exception:
+                        pass
+
+            except Exception as e:
+                logger.debug(f"Autostart notice: {e}")
+
     def _initialize_engine(self) -> None:
         """Initializes SQLAlchemy Engine with connection pooling and test fallback."""
         if not self.config.use_db:
@@ -72,7 +120,9 @@ class DatabaseManager:
         try:
             connect_args = {}
             if db_url and db_url.startswith("postgresql"):
+                self._try_autostart_local_postgres()
                 connect_args = {"connect_timeout": 3}
+
                 self._engine = create_engine(
                     db_url,
                     pool_size=self.config.pool_size,

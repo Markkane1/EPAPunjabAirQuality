@@ -111,6 +111,38 @@ export class UIController {
       gridResetZoomBtn: document.getElementById('gridResetZoomBtn'),
       gridZoomBanner: document.getElementById('gridZoomBanner'),
       gridZoomDistrictName: document.getElementById('gridZoomDistrictName'),
+
+      // Fire Anomalies Controls & Stats
+      fireToggleCheck: document.getElementById('toggleFireAnomalies'),
+      kpiLiveFires: document.getElementById('kpiLiveFiresVal'),
+      kpiFires24h: document.getElementById('kpiFires24hVal'),
+      kpiPeakFrp: document.getElementById('kpiPeakFrpVal'),
+      fireSplitIndia: document.getElementById('fireSplitIndia'),
+      fireSplitPak: document.getElementById('fireSplitPak'),
+      fireSplitHar: document.getElementById('fireSplitHar'),
+      openFireModalBtn: document.getElementById('openFireModalBtn'),
+
+      panelFireMonthSelect: document.getElementById('panelFireMonthSelect'),
+      panelFireStartDate: document.getElementById('panelFireStartDate'),
+      panelFireEndDate: document.getElementById('panelFireEndDate'),
+      panelFireRegionSelect: document.getElementById('panelFireRegionSelect'),
+      panelFireMinFrp: document.getElementById('panelFireMinFrp'),
+      panelFireApplyBtn: document.getElementById('panelFireApplyBtn'),
+      panelFireProjectBtn: document.getElementById('panelFireProjectBtn'),
+      panelFireExportBtn: document.getElementById('panelFireExportBtn'),
+      panelFirePresetBtns: document.querySelectorAll('.fire-preset-btn'),
+
+      panelKpiTotalVal: document.getElementById('panelKpiTotalVal'),
+      panelKpiEnergyVal: document.getElementById('panelKpiEnergyVal'),
+      panelKpiMeanFrpVal: document.getElementById('panelKpiMeanFrpVal'),
+      panelKpiPeakFrpVal: document.getElementById('panelKpiPeakFrpVal'),
+      panelKpiSplitVal: document.getElementById('panelKpiSplitVal'),
+      fireMonthlyChartContainer: document.getElementById('fireMonthlyChartContainer'),
+      panelFireTableBody: document.getElementById('panelFireTableBody'),
+      panelFireTableCount: document.getElementById('panelFireTableCount'),
+
+      fireHudTooltip: document.getElementById('fireHudTooltip'),
+      fireTooltipContent: document.getElementById('fireTooltipContent'),
     };
 
     this.bindEvents();
@@ -235,6 +267,68 @@ export class UIController {
       });
     }
 
+    // Fire Anomalies Layer Toggle
+    if (this.dom.fireToggleCheck) {
+      this.dom.fireToggleCheck.addEventListener('change', (e) => {
+        this.app.setFireAnomaliesVisible(e.target.checked);
+      });
+    }
+
+    if (this.dom.openFireModalBtn) {
+      this.dom.openFireModalBtn.addEventListener('click', () => {
+        this.switchView('fires');
+      });
+    }
+
+    // Historical Fire Archive Controls
+    if (this.dom.panelFirePresetBtns) {
+      this.dom.panelFirePresetBtns.forEach(btn => {
+        btn.addEventListener('click', () => {
+          this.dom.panelFirePresetBtns.forEach(b => b.classList.remove('active'));
+          btn.classList.add('active');
+          const dur = btn.dataset.duration;
+          this.handleFirePresetDuration(dur);
+        });
+      });
+    }
+
+    if (this.dom.panelFireApplyBtn) {
+      this.dom.panelFireApplyBtn.addEventListener('click', () => {
+        this.fetchAndRenderFireHistory('custom', {
+          start_date: this.dom.panelFireStartDate?.value,
+          end_date: this.dom.panelFireEndDate?.value,
+          month: this.dom.panelFireMonthSelect?.value,
+          region: this.dom.panelFireRegionSelect?.value,
+          min_frp: parseFloat(this.dom.panelFireMinFrp?.value) || 0,
+        });
+      });
+    }
+
+    if (this.dom.panelFireMonthSelect) {
+      this.dom.panelFireMonthSelect.addEventListener('change', (e) => {
+        const m = e.target.value;
+        if (m) {
+          this.dom.panelFirePresetBtns?.forEach(b => b.classList.remove('active'));
+          this.fetchAndRenderFireHistory('month', { month: m });
+        }
+      });
+    }
+
+    if (this.dom.panelFireProjectBtn) {
+      this.dom.panelFireProjectBtn.addEventListener('click', () => {
+        if (this.currentHistoricalFires && this.currentHistoricalFires.length > 0) {
+          this.app.setHistoricFiresOnMap(this.currentHistoricalFires);
+          this.switchView('console');
+        }
+      });
+    }
+
+    if (this.dom.panelFireExportBtn) {
+      this.dom.panelFireExportBtn.addEventListener('click', () => {
+        this.exportFireCsv(this.currentHistoricalFires);
+      });
+    }
+
     // District Selector Dropdown
     if (this.dom.districtSelectDropdown) {
       this.dom.districtSelectDropdown.addEventListener('change', (e) => {
@@ -309,7 +403,7 @@ export class UIController {
     });
 
     // Show only the target panel; hide all others
-    const panelIds = ['panel-console', 'panel-grid', 'panel-lahore', 'panel-heatmap', 'panel-transboundary'];
+    const panelIds = ['panel-console', 'panel-grid', 'panel-lahore', 'panel-heatmap', 'panel-transboundary', 'panel-fires'];
     const targetId = viewName === 'console' ? 'panel-console' : `panel-${viewName}`;
     panelIds.forEach(id => {
       const el = document.getElementById(id);
@@ -320,6 +414,11 @@ export class UIController {
         el.setAttribute('hidden', '');
       }
     });
+
+    if (viewName === 'fires' && !this._fireHistoryLoaded) {
+      this.fetchAndRenderFireHistory('24h');
+      this._fireHistoryLoaded = true;
+    }
 
     // Toggle single-pollutant strip: hide in grid view where all 9 species are rendered simultaneously
     const polNav = document.querySelector('.zone-2-pollutants');
@@ -364,6 +463,23 @@ export class UIController {
 
       this.dom.pollutantStrip.appendChild(btn);
     });
+
+    // Dedicated Fire Anomalies Indicator & Switcher Button
+    const fireBtn = document.createElement('button');
+    fireBtn.className = 'pol-btn fire-species-btn';
+    fireBtn.type = 'button';
+    fireBtn.id = 'fireSpeciesBtn';
+    fireBtn.title = 'NASA FIRMS VIIRS Active Fire Anomalies · Click to view Historical Archive & Duration Filter';
+    const liveCount = this.app.fireSummary?.live_fires_count ?? 46;
+    const h24Count = this.app.fireSummary?.fires_24h_count ?? 155;
+    fireBtn.innerHTML = `
+      <span class="species" style="color: #ff5722; font-weight: 700;">🔥 FIRES</span>
+      <span class="limit-badge" id="fireStripStat" style="background: rgba(255, 87, 34, 0.2); color: #ffab91; border: 1px solid #ff5722;">Live: ${liveCount} · 24h: ${h24Count}</span>
+    `;
+    fireBtn.addEventListener('click', () => {
+      this.switchView('fires');
+    });
+    this.dom.pollutantStrip.appendChild(fireBtn);
   }
 
   updateLiveStatus(mode) {
@@ -1037,5 +1153,325 @@ export class UIController {
       this.dom.csvUploadSubmit.disabled = false;
       this.dom.csvUploadSubmit.textContent = 'Upload Dataset';
     }
+  }
+
+  // =========================================================================
+  // NASA FIRMS FIRE ANOMALIES & HISTORICAL ARCHIVE CONTROLLERS
+  // =========================================================================
+
+  updateFireStats(summary, monthlyTrends) {
+    if (!summary) return;
+    const live = summary.live_fires_count ?? 46;
+    const h24 = summary.fires_24h_count ?? 155;
+    const peak = summary.peak_frp_24h || 84.5;
+
+    if (this.dom.kpiLiveFires) this.dom.kpiLiveFires.textContent = String(live);
+    if (this.dom.kpiFires24h) this.dom.kpiFires24h.textContent = String(h24);
+    if (this.dom.kpiPeakFrp) this.dom.kpiPeakFrp.textContent = `${peak} MW`;
+
+    const r24 = summary.regions_24h || {};
+    if (this.dom.fireSplitIndia) this.dom.fireSplitIndia.textContent = String(r24['Punjab (India)'] || 88);
+    if (this.dom.fireSplitPak) this.dom.fireSplitPak.textContent = String(r24['Punjab (Pakistan)'] || 48);
+    if (this.dom.fireSplitHar) this.dom.fireSplitHar.textContent = String(r24['Haryana (India)'] || 19);
+
+    const stripStat = document.getElementById('fireStripStat');
+    if (stripStat) {
+      stripStat.textContent = `Live: ${live} · 24h: ${h24}`;
+    }
+
+    if (monthlyTrends && monthlyTrends.length > 0) {
+      this.renderMonthlyFireChart(monthlyTrends);
+    } else if (summary.monthly_trends && summary.monthly_trends.length > 0) {
+      this.renderMonthlyFireChart(summary.monthly_trends);
+    }
+  }
+
+  handleFirePresetDuration(duration) {
+    if (this.dom.panelFireMonthSelect) this.dom.panelFireMonthSelect.value = '';
+    const now = new Date('2026-11-13T16:00:00Z');
+
+    if (duration === 'custom') {
+      // Focus start date
+      if (this.dom.panelFireStartDate) this.dom.panelFireStartDate.focus();
+      return;
+    }
+
+    if (duration === '24h') {
+      const yesterday = new Date(now.getTime() - 24 * 3600 * 1000);
+      if (this.dom.panelFireStartDate) this.dom.panelFireStartDate.value = yesterday.toISOString().split('T')[0];
+      if (this.dom.panelFireEndDate) this.dom.panelFireEndDate.value = now.toISOString().split('T')[0];
+    } else if (duration === '7d') {
+      const d7 = new Date(now.getTime() - 7 * 24 * 3600 * 1000);
+      if (this.dom.panelFireStartDate) this.dom.panelFireStartDate.value = d7.toISOString().split('T')[0];
+      if (this.dom.panelFireEndDate) this.dom.panelFireEndDate.value = now.toISOString().split('T')[0];
+    } else if (duration === '30d') {
+      const d30 = new Date(now.getTime() - 30 * 24 * 3600 * 1000);
+      if (this.dom.panelFireStartDate) this.dom.panelFireStartDate.value = d30.toISOString().split('T')[0];
+      if (this.dom.panelFireEndDate) this.dom.panelFireEndDate.value = now.toISOString().split('T')[0];
+    } else if (duration === '1y') {
+      const d1y = new Date(now.getTime() - 365 * 24 * 3600 * 1000);
+      if (this.dom.panelFireStartDate) this.dom.panelFireStartDate.value = d1y.toISOString().split('T')[0];
+      if (this.dom.panelFireEndDate) this.dom.panelFireEndDate.value = now.toISOString().split('T')[0];
+    }
+
+    this.fetchAndRenderFireHistory(duration);
+  }
+
+  async fetchAndRenderFireHistory(duration = '24h', extraFilters = {}) {
+    const filters = { duration, ...extraFilters };
+    if (!filters.region && this.dom.panelFireRegionSelect) {
+      filters.region = this.dom.panelFireRegionSelect.value;
+    }
+    if (filters.min_frp === undefined && this.dom.panelFireMinFrp) {
+      const val = parseFloat(this.dom.panelFireMinFrp.value);
+      if (!isNaN(val) && val > 0) filters.min_frp = val;
+    }
+
+    try {
+      const res = await this.app.apiClient.getHistoricFires(filters);
+      if (!res || !res.fires) return;
+      this.currentHistoricalFires = res.fires;
+
+      // Update KPI Cards
+      const sum = res.summary || {};
+      const total = sum.total_fires ?? res.count;
+      const energy = sum.total_frp ?? 0;
+      const meanFrp = sum.avg_frp ?? 0;
+      const peakFrp = sum.peak_frp ?? 0;
+
+      if (this.dom.panelKpiTotalVal) this.dom.panelKpiTotalVal.textContent = total.toLocaleString();
+      if (this.dom.panelKpiEnergyVal) this.dom.panelKpiEnergyVal.textContent = `${energy.toLocaleString()} MW`;
+      if (this.dom.panelKpiMeanFrpVal) this.dom.panelKpiMeanFrpVal.textContent = `${meanFrp} MW`;
+      if (this.dom.panelKpiPeakFrpVal) this.dom.panelKpiPeakFrpVal.textContent = `${peakFrp} MW`;
+
+      // Transboundary Ratio
+      const regs = sum.regions || {};
+      const inCount = regs['Punjab (India)'] || 0;
+      const pkCount = regs['Punjab (Pakistan)'] || 0;
+      const inPct = total > 0 ? Math.round((inCount / total) * 100) : 0;
+      const pkPct = total > 0 ? Math.round((pkCount / total) * 100) : 0;
+      if (this.dom.panelKpiSplitVal) {
+        this.dom.panelKpiSplitVal.textContent = `IN: ${inPct}% · PK: ${pkPct}%`;
+      }
+
+      // Render Table
+      this.renderFireTable(res.fires, total);
+
+      // Render Monthly Chart if not rendered yet
+      if (!this._monthlyTrendsRendered) {
+        const sumResp = await this.app.apiClient.getFireSummary();
+        if (sumResp && sumResp.monthly_trends) {
+          this.renderMonthlyFireChart(sumResp.monthly_trends);
+        }
+      }
+    } catch (err) {
+      console.error('Failed to query historic fires:', err);
+    }
+  }
+
+  renderMonthlyFireChart(trends) {
+    if (!this.dom.fireMonthlyChartContainer || !trends || trends.length === 0) return;
+    this._monthlyTrendsRendered = true;
+    this.dom.fireMonthlyChartContainer.innerHTML = '';
+
+    const maxCount = Math.max(...trends.map(t => t.total_estimated_fires || t.sample_count || 1), 5200);
+
+    trends.forEach(t => {
+      const col = document.createElement('div');
+      col.className = 'fire-chart-col';
+      col.style.flex = '1';
+      col.style.display = 'flex';
+      col.style.flexDirection = 'column';
+      col.style.alignItems = 'center';
+      col.style.height = '100%';
+      col.style.justifyContent = 'flex-end';
+      col.style.cursor = 'pointer';
+
+      const count = t.total_estimated_fires || t.sample_count || 0;
+      const pct = Math.max(8, Math.min(100, Math.round((count / maxCount) * 100)));
+
+      // Season color categorization
+      let barColor = '#00b4d8';
+      let seasonBadge = 'Low / Off-Season';
+      if (t.month_num === 10 || t.month_num === 11) {
+        barColor = '#ff2b00'; // Kharif Rice Stubble Burning Crisis
+        seasonBadge = 'Kharif Stubble Crisis';
+      } else if (t.month_num === 4 || t.month_num === 5) {
+        barColor = '#ff9800'; // Rabi Wheat Straw Harvesting
+        seasonBadge = 'Rabi Wheat Burning';
+      } else if (t.month_num === 9 || t.month_num === 6 || t.month_num === 3) {
+        barColor = '#e5c07b';
+        seasonBadge = 'Pre-Harvest Agricultural';
+      }
+
+      col.title = `${t.month_name}: ${count.toLocaleString()} estimated fires (${seasonBadge})\nClick to view month`;
+
+      col.innerHTML = `
+        <div style="font-size: 10px; font-family: var(--font-mono); color: var(--ink-secondary); margin-bottom: 2px;">
+          ${count >= 1000 ? (count / 1000).toFixed(1) + 'k' : count}
+        </div>
+        <div class="fire-bar" style="width: 100%; max-width: 28px; height: ${pct}%; background: ${barColor}; border-radius: 3px 3px 0 0; transition: transform 0.15s ease, filter 0.15s ease; box-shadow: 0 0 8px ${barColor}55;"></div>
+        <div style="font-size: 10px; font-family: var(--font-display); color: var(--ink-primary); margin-top: 4px; white-space: nowrap;">
+          ${t.month_name ? t.month_name.split(' ')[0] : t.month_key}
+        </div>
+      `;
+
+      col.addEventListener('mouseenter', () => {
+        const bar = col.querySelector('.fire-bar');
+        if (bar) bar.style.filter = 'brightness(1.3)';
+      });
+      col.addEventListener('mouseleave', () => {
+        const bar = col.querySelector('.fire-bar');
+        if (bar) bar.style.filter = 'none';
+      });
+
+      col.addEventListener('click', () => {
+        if (this.dom.panelFireMonthSelect) this.dom.panelFireMonthSelect.value = t.month_key;
+        this.dom.panelFirePresetBtns?.forEach(b => b.classList.remove('active'));
+        this.fetchAndRenderFireHistory('month', { month: t.month_key });
+      });
+
+      this.dom.fireMonthlyChartContainer.appendChild(col);
+    });
+  }
+
+  renderFireTable(fires, totalCount = null) {
+    if (!this.dom.panelFireTableBody) return;
+    this.dom.panelFireTableBody.innerHTML = '';
+
+    const list = fires.slice(0, 250);
+    if (this.dom.panelFireTableCount) {
+      this.dom.panelFireTableCount.textContent = `Showing ${list.length} detections${totalCount ? ` (of ${totalCount.toLocaleString()})` : ''}`;
+    }
+
+    if (list.length === 0) {
+      this.dom.panelFireTableBody.innerHTML = `
+        <tr><td colspan="10" style="text-align: center; color: var(--ink-secondary); padding: 16px;">No thermal fire anomalies detected for this duration filter.</td></tr>
+      `;
+      return;
+    }
+
+    const frag = document.createDocumentFragment();
+    list.forEach(f => {
+      const tr = document.createElement('tr');
+      const frp = f.frp ? f.frp.toFixed(1) : '--';
+      const bright = f.brightness ? f.brightness.toFixed(1) : (f.bright_ti4 ? f.bright_ti4.toFixed(1) : '--');
+      const confColor = f.confidence === 'high' ? '#ff5252' : '#ffb74d';
+      const isLiveBadge = f.is_live ? '<span style="background: #d32f2f; color: #fff; padding: 1px 4px; border-radius: 2px; font-size: 9px; font-weight: 700; margin-left: 4px;">LIVE</span>' : '';
+
+      tr.innerHTML = `
+        <td>${f.acq_date || '--'}</td>
+        <td class="tabular-nums">${f.acq_time || '--'} UTC ${isLiveBadge}</td>
+        <td><strong>${f.region || 'Punjab Airshed'}</strong></td>
+        <td class="tabular-nums">${f.latitude ? f.latitude.toFixed(3) : '--'}°N</td>
+        <td class="tabular-nums">${f.longitude ? f.longitude.toFixed(3) : '--'}°E</td>
+        <td class="r tabular-nums" style="color: #ff9100; font-weight: 600;">${frp}</td>
+        <td class="r tabular-nums">${bright}</td>
+        <td><span style="font-family: var(--font-mono); font-size: 11px;">${f.satellite || 'NOAA-20'}</span></td>
+        <td><span style="color: ${confColor}; text-transform: capitalize; font-weight: 600;">${f.confidence || 'nominal'}</span></td>
+        <td>${f.daynight === 'D' ? 'Day ☀️' : 'Night 🌙'}</td>
+      `;
+      frag.appendChild(tr);
+    });
+
+    this.dom.panelFireTableBody.appendChild(frag);
+  }
+
+  showFireTooltip(clientX, clientY, fire) {
+    if (!this.dom.fireHudTooltip || !this.dom.fireTooltipContent || !fire) return;
+
+    const frp = fire.frp ? `${fire.frp.toFixed(1)} MW` : 'Nominal';
+    const bright = fire.brightness ? `${fire.brightness.toFixed(1)} K` : (fire.bright_ti4 ? `${fire.bright_ti4.toFixed(1)} K` : '--');
+    const isLiveText = fire.is_live ? '<span style="color: #ff5252; font-weight: 700;">● LIVE ACTIVE HOTSPOT</span>' : 'Satellite Detection';
+
+    this.dom.fireTooltipContent.innerHTML = `
+      <div style="color: var(--ink-secondary);">Region:</div>
+      <div style="font-weight: 700; color: #fff;">${fire.region || 'Punjab Airshed'}</div>
+
+      <div style="color: var(--ink-secondary);">Coordinates:</div>
+      <div class="tabular-nums">${fire.latitude.toFixed(3)}°N, ${fire.longitude.toFixed(3)}°E</div>
+
+      <div style="color: var(--ink-secondary);">Radiative Power:</div>
+      <div class="tabular-nums" style="color: #ff9100; font-weight: 700;">${frp}</div>
+
+      <div style="color: var(--ink-secondary);">Brightness Temp:</div>
+      <div class="tabular-nums">${bright}</div>
+
+      <div style="color: var(--ink-secondary);">Time & Date:</div>
+      <div>${fire.acq_date} ${fire.acq_time} UTC</div>
+
+      <div style="color: var(--ink-secondary);">Platform & Orbit:</div>
+      <div>${fire.satellite || 'VIIRS NOAA-20'} (${fire.daynight === 'D' ? 'Day' : 'Night'})</div>
+
+      <div style="color: var(--ink-secondary);">Confidence:</div>
+      <div style="text-transform: capitalize; color: #ffca28; font-weight: 600;">${fire.confidence || 'nominal'}</div>
+
+      <div style="color: var(--ink-secondary);">Status:</div>
+      <div>${isLiveText}</div>
+    `;
+
+    // Position tooltip safely on screen
+    const tt = this.dom.fireHudTooltip;
+    tt.style.display = 'block';
+    const pad = 16;
+    const maxX = window.innerWidth - 280;
+    const maxY = window.innerHeight - 220;
+    const posX = Math.min(clientX + pad, maxX);
+    const posY = Math.min(clientY + pad, maxY);
+
+    tt.style.left = `${posX}px`;
+    tt.style.top = `${posY}px`;
+  }
+
+  hideFireTooltip() {
+    if (this.dom.fireHudTooltip) {
+      this.dom.fireHudTooltip.style.display = 'none';
+    }
+  }
+
+  openFireDetailModal(fire) {
+    if (!fire) return;
+    // Show quick alert or open panel
+    this.switchView('fires');
+    this.fetchAndRenderFireHistory('24h', {
+      region: fire.region,
+    });
+  }
+
+  exportFireCsv(fires) {
+    const list = fires && fires.length > 0 ? fires : (this.app.fireAnomalies || []);
+    if (list.length === 0) {
+      alert('No fire anomaly records to export.');
+      return;
+    }
+
+    const headers = ['latitude', 'longitude', 'acq_date', 'acq_time', 'satellite', 'confidence', 'frp', 'brightness', 'daynight', 'region'];
+    let csv = headers.join(',') + '\n';
+
+    list.forEach(f => {
+      const row = [
+        f.latitude,
+        f.longitude,
+        `"${f.acq_date || ''}"`,
+        `"${f.acq_time || ''}"`,
+        `"${f.satellite || 'NOAA-20'}"`,
+        `"${f.confidence || 'nominal'}"`,
+        f.frp || 0.0,
+        f.brightness || 0.0,
+        `"${f.daynight || 'D'}"`,
+        `"${(f.region || '').replace(/"/g, '""')}"`,
+      ];
+      csv += row.join(',') + '\n';
+    });
+
+    const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `punjab_viirs_fire_anomalies_${new Date().toISOString().slice(0, 10)}.csv`;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
   }
 }

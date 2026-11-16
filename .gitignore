@@ -15,6 +15,12 @@ htmlcov/
 node_modules/
 dist/
 
-# OS specific
+# Generated test artifacts
+test_results_e2e.json
+tests/e2e/test_results_e2e.json
+test_plot.png
+
+# OS / Office lock files
 .DS_Store
 Thumbs.db
+~$*

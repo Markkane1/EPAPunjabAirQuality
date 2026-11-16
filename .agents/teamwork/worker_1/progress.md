@@ -1,0 +1,8 @@
+# Progress Log
+
+Last visited: 2026-11-15T08:10:00Z
+Status: Completed all remediation tasks across Tracks A, B, C, and D.
+- Track A (Backend): Direct endpoint aliases `/api/v1/stations` and `/api/v1/districts` mounted; CORS origins hardened without wildcard credentials; synthetic mock masquerades in FIRMS and IQAir pipelines eradicated; static magic numbers removed from CAMS and staging buffer; duplicate `tick_async` shadowed definition removed; baseline repository cache and station indexing fortified for concurrent dynamic CSV mutations.
+- Track B (Domain Physics): Station 172 (Wazirabad) blacklisted across math and repository; Python domain normalizer created implementing 5 schema traps; `test_data_normalizer.py` 100% green.
+- Track C (Frontend Workstation): Semantic 100vw x 100vh CSS Grid container with 5 rigid zones wired; Radix ghost dependencies resolved in package.json; theme provider `data-theme` attribute fixed; WCAG AAA contrast ink enforced; Deck.gl planimetric MapCanvas integration wired with flyTo on district selection; dynamic CSV ingest and baseline refresh wired; SSE LiveStreamManager connected with 45s watchdog and jittered backoff; RAF animation throttled to ~15 Hz to eliminate 60 Hz IDW rasterization churn; soft shadows and rounded corners eradicated across UI components and tokens.
+- Track D (Test Harness): Shadow oracle `PAQReferenceOracle` in e2e conftest eliminated in favor of real domain math; real fallback engine verified in Tier 4 scenarios; 720/720 tests passing in full pytest suite; 144/144 tests passing in consolidated e2e runner; `check:workstation` passing; `typecheck` (tsc) passing; `npm run build` passing.

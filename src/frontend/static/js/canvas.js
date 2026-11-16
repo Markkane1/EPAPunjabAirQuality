@@ -173,7 +173,9 @@ export class CanvasMapEngine {
     this.displayMode = 'surface'; // 'surface' or 'district'
     this.showTransportLinks = true;
     this.showRegionalWinds = true;
+    this.showFireAnomalies = true;
     this.selectedDistrict = 'Lahore';
+    this.fireAnomalies = [];
 
     // Theme Colors
     this.theme = 'dark';
@@ -410,6 +412,34 @@ export class CanvasMapEngine {
     }
 
     return closestName;
+  }
+
+  /**
+   * Hit tests proximity to active fire anomaly symbols.
+   */
+  hitTestFire(screenX, screenY) {
+    if (!this.showFireAnomalies || !this.fireAnomalies || this.fireAnomalies.length === 0) return null;
+    const [wx, wy] = this.screenToWorld(screenX, screenY);
+    const maxDist = 14.0 / this.zoom;
+    let closestFire = null;
+    let closestDist = maxDist;
+
+    for (let i = 0; i < this.fireAnomalies.length; i++) {
+      const f = this.fireAnomalies[i];
+      if (!f.xy) {
+        if (f.longitude !== undefined && f.latitude !== undefined) {
+          f.xy = project(f.longitude, f.latitude, this.S);
+        } else {
+          continue;
+        }
+      }
+      const d = Math.hypot(f.xy[0] - wx, f.xy[1] - wy);
+      if (d < closestDist) {
+        closestDist = d;
+        closestFire = f;
+      }
+    }
+    return closestFire;
   }
 
   /**
@@ -1071,6 +1101,101 @@ export class CanvasMapEngine {
   }
 
   /**
+   * Renders spaceborne VIIRS 375m active fire anomalies as stylized flame symbols.
+   */
+  drawFireAnomalies(ctx, fires) {
+    if (!fires || fires.length === 0) return;
+    ctx.save();
+    const scaleFactor = 1.0 / Math.sqrt(this.zoom);
+
+    for (let i = 0; i < fires.length; i++) {
+      const f = fires[i];
+      if (!f.xy) {
+        if (f.longitude !== undefined && f.latitude !== undefined) {
+          f.xy = project(f.longitude, f.latitude, this.S);
+        } else {
+          continue;
+        }
+      }
+      const x = f.xy[0];
+      const y = f.xy[1];
+
+      // Base flame dimensions scaled by FRP (Fire Radiative Power)
+      const frp = f.frp || 20.0;
+      const r = Math.max(5.5, Math.min(13.0, 5.0 + Math.sqrt(frp) * 0.75)) * scaleFactor;
+      const w = r * 0.85;
+      const h = r * 1.35;
+
+      // 1. Heat Aura Glow
+      ctx.beginPath();
+      const auraGrad = ctx.createRadialGradient(x, y - h * 0.2, 0, x, y - h * 0.2, r * 2.2);
+      if (f.is_live) {
+        auraGrad.addColorStop(0, 'rgba(255, 50, 0, 0.65)');
+        auraGrad.addColorStop(0.5, 'rgba(255, 120, 0, 0.3)');
+        auraGrad.addColorStop(1, 'rgba(255, 60, 0, 0)');
+      } else {
+        auraGrad.addColorStop(0, 'rgba(255, 80, 0, 0.45)');
+        auraGrad.addColorStop(0.6, 'rgba(255, 140, 0, 0.15)');
+        auraGrad.addColorStop(1, 'rgba(255, 80, 0, 0)');
+      }
+      ctx.fillStyle = auraGrad;
+      ctx.arc(x, y - h * 0.2, r * 2.2, 0, Math.PI * 2);
+      ctx.fill();
+
+      // 2. Outer Flame Body
+      ctx.beginPath();
+      ctx.moveTo(x, y - h); // top flame tip
+      ctx.bezierCurveTo(x + w * 0.6, y - h * 0.35, x + w, y + h * 0.25, x + w * 0.5, y + h * 0.65);
+      ctx.bezierCurveTo(x + w * 0.2, y + h * 0.9, x - w * 0.2, y + h * 0.9, x - w * 0.5, y + h * 0.65);
+      ctx.bezierCurveTo(x - w, y + h * 0.25, x - w * 0.6, y - h * 0.35, x, y - h);
+      ctx.closePath();
+
+      const flameGrad = ctx.createLinearGradient(x, y - h, x, y + h * 0.7);
+      flameGrad.addColorStop(0, '#ff1a00');
+      flameGrad.addColorStop(0.45, '#ff6a00');
+      flameGrad.addColorStop(1, '#ffc400');
+      ctx.fillStyle = flameGrad;
+      ctx.fill();
+
+      // Outer flame border stroke
+      ctx.strokeStyle = 'rgba(20, 8, 4, 0.85)';
+      ctx.lineWidth = 0.85 * scaleFactor;
+      ctx.stroke();
+
+      // 3. Inner White/Yellow Hot Core
+      const iw = w * 0.48;
+      const ih = h * 0.52;
+      const iy = y + h * 0.05;
+
+      ctx.beginPath();
+      ctx.moveTo(x, iy - ih);
+      ctx.bezierCurveTo(x + iw * 0.6, iy - ih * 0.3, x + iw, iy + ih * 0.2, x + iw * 0.5, iy + ih * 0.6);
+      ctx.bezierCurveTo(x + iw * 0.2, iy + ih * 0.85, x - iw * 0.2, iy + ih * 0.85, x - iw * 0.5, iy + ih * 0.6);
+      ctx.bezierCurveTo(x - iw, iy + ih * 0.2, x - iw * 0.6, iy - ih * 0.3, x, iy - ih);
+      ctx.closePath();
+
+      const coreGrad = ctx.createLinearGradient(x, iy - ih, x, iy + ih);
+      coreGrad.addColorStop(0, '#ffffff');
+      coreGrad.addColorStop(0.5, '#fff176');
+      coreGrad.addColorStop(1, '#ffb300');
+      ctx.fillStyle = coreGrad;
+      ctx.fill();
+
+      // 4. Live Fire Beacon Indicator (if current live hotspot)
+      if (f.is_live) {
+        ctx.beginPath();
+        ctx.arc(x, y - h - 2.5 * scaleFactor, 1.6 * scaleFactor, 0, Math.PI * 2);
+        ctx.fillStyle = '#ff2200';
+        ctx.fill();
+        ctx.strokeStyle = '#ffffff';
+        ctx.lineWidth = 0.6 * scaleFactor;
+        ctx.stroke();
+      }
+    }
+    ctx.restore();
+  }
+
+  /**
    * Primary Render Dispatcher.
    */
   render(state) {
@@ -1106,6 +1231,11 @@ export class CanvasMapEngine {
 
     // Layer 3: Transport Vectors & Border Chevrons
     this.drawLayer3(this.ctx, state.transportLinks, state.activeWinds);
+
+    // Layer 3.5: Spaceborne VIIRS Fire Anomalies
+    if (this.showFireAnomalies) {
+      this.drawFireAnomalies(this.ctx, state.fireAnomalies || this.fireAnomalies);
+    }
 
     // Layer 4: Station Glyphs & Collision-Free District Labels
     this.drawLayer4(this.ctx, state.stationReadings, state.districtReadings, state.activeWinds, activeStationPoints);
