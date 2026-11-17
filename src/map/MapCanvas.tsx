@@ -250,12 +250,28 @@ export const MapCanvas = forwardRef<MapHandle, MapCanvasProps>(function MapCanva
       container: element,
       style: {
         version: 8,
-        sources: {},
+        sources: {
+          'esri-dark': {
+            type: 'raster',
+            tiles: [
+              'https://server.arcgisonline.com/ArcGIS/rest/services/Canvas/World_Dark_Gray_Base/MapServer/tile/{z}/{y}/{x}',
+            ],
+            tileSize: 256,
+            attribution: '&copy; Esri &copy; OpenStreetMap contributors',
+          },
+        },
         layers: [
           {
             id: 'background',
             type: 'background',
             paint: { 'background-color': '#0b1211' },
+          },
+          {
+            id: 'esri-dark-layer',
+            type: 'raster',
+            source: 'esri-dark',
+            minzoom: 0,
+            maxzoom: 16,
           },
         ],
       },
@@ -276,9 +292,9 @@ export const MapCanvas = forwardRef<MapHandle, MapCanvasProps>(function MapCanva
     map.keyboard.disableRotation();
     mapRef.current = map;
 
-    // Deck.gl MapboxOverlay
+    // Deck.gl MapboxOverlay in overlaid mode (interleaved: false for reliable WebGL synchronization)
     const overlay = new MapboxOverlay({
-      interleaved: true,
+      interleaved: false,
       layers: buildLayers(propsRef.current),
     });
     overlayRef.current = overlay;
@@ -286,9 +302,17 @@ export const MapCanvas = forwardRef<MapHandle, MapCanvasProps>(function MapCanva
     map.on('load', () => {
       map.addControl(overlay as unknown as maplibregl.IControl);
       map.fitBounds(PUNJAB_BOUNDS, { padding: 28, duration: 0 });
+      map.resize();
     });
 
+    // Handle container resize
+    const resizeObserver = new ResizeObserver(() => {
+      map.resize();
+    });
+    resizeObserver.observe(element);
+
     return () => {
+      resizeObserver.disconnect();
       overlay.finalize();
       map.remove();
       overlayRef.current = null;
@@ -327,8 +351,13 @@ export const MapCanvas = forwardRef<MapHandle, MapCanvasProps>(function MapCanva
       className="absolute inset-0"
       data-pitch={MAP_LOCK.pitch}
       data-map-lock={JSON.stringify(MAP_LOCK)}
+      style={{ position: 'absolute', top: 0, left: 0, width: '100%', height: '100%', overflow: 'hidden' }}
     >
-      <div ref={containerRef} className="absolute inset-0" />
+      <div
+        ref={containerRef}
+        className="absolute inset-0"
+        style={{ position: 'absolute', top: 0, left: 0, width: '100%', height: '100%' }}
+      />
       {tooltip ? (
         <div
           role="tooltip"

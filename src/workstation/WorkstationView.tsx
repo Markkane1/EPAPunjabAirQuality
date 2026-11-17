@@ -94,6 +94,7 @@ export function WorkstationView({
           className="absolute inset-0"
           data-pitch={model.mapLock.pitch}
           data-map-lock={JSON.stringify(model.mapLock)}
+          style={{ position: 'absolute', top: 0, left: 0, width: '100%', height: '100%' }}
         >
           {mapSlot}
         </div>

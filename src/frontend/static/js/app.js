@@ -143,7 +143,7 @@ export class App {
     // Populate District Selector Dropdown in UI
     const selDropdown = document.getElementById('districtSelectDropdown');
     if (selDropdown && this.districts.length > 0) {
-      selDropdown.innerHTML = '';
+      selDropdown.replaceChildren();
       this.districts.forEach(d => {
         const opt = document.createElement('option');
         opt.value = d.name || d.district;
@@ -1419,8 +1419,8 @@ export class App {
 
       // Transport links (refined vector arcs)
       if (this.state.showTransportLinks && !isAQI(Q) && Q.frames && Q.frames[fr] && Q.frames[fr].l) {
-        const ls = Q.frames[fr].l.slice()
-          .sort((a, b) => b[2] - a[2])
+        const ls = Q.frames[fr].l
+          .toSorted((a, b) => b[2] - a[2])
           .filter(l => l[2] >= (m.maxf || 1) * 0.12)
           .slice(0, 5);
 

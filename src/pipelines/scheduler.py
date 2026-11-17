@@ -212,8 +212,11 @@ class PipelineOrchestrator:
         nwp_winds: Dict[str, tuple[float, float]] = {}
         for r in om_reports:
             d_name = r.get("district")
-            if d_name and "u_calibrated" in r and "v_calibrated" in r:
-                nwp_winds[d_name] = (float(r["u_calibrated"]), float(r["v_calibrated"]))
+            if d_name and r.get("u_calibrated") is not None and r.get("v_calibrated") is not None:
+                try:
+                    nwp_winds[d_name] = (float(r["u_calibrated"]), float(r["v_calibrated"]))
+                except (ValueError, TypeError):
+                    pass
         self.staging.stage_nwp_forecast(target_ts, nwp_winds)
 
         # 3. Ground Stations: Live EPA Punjab AQMS Feed with automatic fallback

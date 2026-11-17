@@ -174,3 +174,45 @@
   backdrop-filter: none !important;
   -webkit-backdrop-filter: none !important;
 }
+
+/* ==========================================================================
+   Structural Utility Shims (Fix for Un-Emitted Tailwind Utility Classes)
+   ========================================================================== */
+.relative { position: relative; }
+.absolute { position: absolute; }
+.inset-0 { top: 0; right: 0; bottom: 0; left: 0; }
+.w-full { width: 100%; }
+.h-full { height: 100%; }
+.min-w-0 { min-width: 0; }
+.overflow-hidden { overflow: hidden; }
+.flex { display: flex; }
+.flex-col { flex-direction: column; }
+.flex-row { flex-direction: row; }
+.items-center { align-items: center; }
+.justify-between { justify-content: space-between; }
+.justify-center { justify-content: center; }
+
+/* Map Canvas Container Strict 100% Filling */
+#map-canvas,
+.mapCanvas,
+#map-canvas > div,
+#map-canvas > div > div,
+.maplibregl-map,
+.maplibregl-canvas-container {
+  width: 100% !important;
+  height: 100% !important;
+  position: absolute !important;
+  top: 0 !important;
+  left: 0 !important;
+  right: 0 !important;
+  bottom: 0 !important;
+}
+
+/* SVG Fill & Stroke Defaults */
+svg circle.fill-none { fill: none !important; }
+svg path.fill-transparent { fill: transparent !important; }
+svg .stroke-border { stroke: var(--border-subtle, #2a3a38) !important; }
+svg .stroke-primary { stroke: var(--pepc-good, #00B050) !important; }
+svg .fill-primary\/25 { fill: rgba(0, 176, 80, 0.25) !important; }
+svg .stroke-muted-foreground { stroke: var(--ink-tertiary, #a8bbb5) !important; }
+

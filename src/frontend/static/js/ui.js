@@ -182,7 +182,7 @@ export class UIController {
     if (this.dom.csvFileInput) {
       this.dom.csvFileInput.addEventListener('change', () => {
         if (this.dom.csvQuarantineArea) {
-          this.dom.csvQuarantineArea.innerHTML = '';
+          this.dom.csvQuarantineArea.replaceChildren();
         }
       });
     }
@@ -439,7 +439,7 @@ export class UIController {
 
   renderPollutantButtons(activePollutant) {
     if (!this.dom.pollutantStrip) return;
-    this.dom.pollutantStrip.innerHTML = '';
+    this.dom.pollutantStrip.replaceChildren();
 
     const list = ['AQI', 'PM2.5', 'PM10', 'NO2', 'SO2', 'CO', 'O3', 'NO', 'NOX'];
     list.forEach((key) => {
@@ -662,7 +662,7 @@ export class UIController {
 
   renderAirportWeatherTable(airports) {
     if (!this.dom.airportTableBody) return;
-    this.dom.airportTableBody.innerHTML = '';
+    this.dom.airportTableBody.replaceChildren();
 
     const list = airports && airports.length > 0 ? airports : [
       { icao: 'OPLA', name: 'Lahore', wind_dir: 180, wind_kt: 4, vis: 1200, temp: 21, wx: 'Smoke' },
@@ -689,11 +689,11 @@ export class UIController {
 
   renderDistrictRankedList(districtsReadings, activePollutant, selectedDistrict) {
     if (!this.dom.districtRankedList) return;
-    this.dom.districtRankedList.innerHTML = '';
+    this.dom.districtRankedList.replaceChildren();
 
     const sorted = Object.entries(districtsReadings)
       .map(([name, val]) => ({ name, val: val !== null && val !== undefined ? val : -1 }))
-      .sort((a, b) => b.val - a.val);
+      .toSorted((a, b) => b.val - a.val);
 
     const maxVal = Math.max(1, ...sorted.map(d => d.val));
     const spec = STATUTORY_LIMITS[activePollutant] || STATUTORY_LIMITS['PM2.5'];
@@ -730,7 +730,7 @@ export class UIController {
       this.dom.selectedDistrictTitle.textContent = districtName;
     }
     if (!this.dom.selectedDistrictTableBody) return;
-    this.dom.selectedDistrictTableBody.innerHTML = '';
+    this.dom.selectedDistrictTableBody.replaceChildren();
 
     const isEst = this.app?.districts?.find(d => (d.name || d.district) === districtName)?.est;
     const pollutants = ['AQI', 'PM2.5', 'PM10', 'NO2', 'SO2', 'CO', 'O3', 'NO', 'NOX'];
@@ -796,7 +796,7 @@ export class UIController {
 
   renderLahoreStationsTable(stations, currentHour) {
     if (!this.dom.lahoreTableBody) return;
-    this.dom.lahoreTableBody.innerHTML = '';
+    this.dom.lahoreTableBody.replaceChildren();
 
     const cleanStationName = (name) => {
       return (name || '')
@@ -863,7 +863,7 @@ export class UIController {
 
   renderCrossBorderTable(cities) {
     if (!this.dom.crossBorderTableBody) return;
-    this.dom.crossBorderTableBody.innerHTML = '';
+    this.dom.crossBorderTableBody.replaceChildren();
     const list = cities && cities.length > 0 ? cities : [];
 
     list.forEach(c => {
@@ -1112,7 +1112,7 @@ export class UIController {
 
     // Reset previous quarantine error messages
     if (this.dom.csvQuarantineArea) {
-      this.dom.csvQuarantineArea.innerHTML = '';
+      this.dom.csvQuarantineArea.replaceChildren();
     }
 
     try {
@@ -1139,7 +1139,7 @@ export class UIController {
         }
       } else {
         // Complete success with zero quarantined rows
-        if (this.dom.csvQuarantineArea) this.dom.csvQuarantineArea.innerHTML = '';
+        if (this.dom.csvQuarantineArea) this.dom.csvQuarantineArea.replaceChildren();
         if (this.dom.csvModal) this.dom.csvModal.setAttribute('hidden', '');
         alert(`CSV Upload Success: ${validCount} valid records merged into telemetry.`);
         this.app.onCsvIngested(result);
@@ -1272,7 +1272,7 @@ export class UIController {
   renderMonthlyFireChart(trends) {
     if (!this.dom.fireMonthlyChartContainer || !trends || trends.length === 0) return;
     this._monthlyTrendsRendered = true;
-    this.dom.fireMonthlyChartContainer.innerHTML = '';
+    this.dom.fireMonthlyChartContainer.replaceChildren();
 
     const maxCount = Math.max(...trends.map(t => t.total_estimated_fires || t.sample_count || 1), 5200);
 
@@ -1337,7 +1337,7 @@ export class UIController {
 
   renderFireTable(fires, totalCount = null) {
     if (!this.dom.panelFireTableBody) return;
-    this.dom.panelFireTableBody.innerHTML = '';
+    this.dom.panelFireTableBody.replaceChildren();
 
     const list = fires.slice(0, 250);
     if (this.dom.panelFireTableCount) {

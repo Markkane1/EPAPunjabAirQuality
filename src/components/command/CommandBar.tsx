@@ -3,7 +3,6 @@ import { Activity, AlertTriangle, LayoutGrid, SlidersHorizontal } from '../commo
 import { ThemeSwitch } from '../theme-switch';
 import { Badge } from '../ui/badge';
 import { Button } from '../ui/button';
-import { Separator } from '../ui/separator';
 import { Sheet, SheetContent, SheetDescription, SheetHeader, SheetTitle, SheetTrigger } from '../ui/sheet';
 import { Tabs, TabsList, TabsTrigger } from '../ui/tabs';
 import { cn } from '../../lib/utils';
@@ -61,22 +60,23 @@ export const CommandBar: React.FC<CommandBarProps> = ({
       className={cn("z-30 flex h-14 shrink-0 items-center justify-between gap-3 border-b border-border bg-background px-4", className)}
     >
       {/* Group 1: System Identity & Stream Status */}
-      <div className="flex min-w-0 items-center gap-3">
-        <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-none bg-primary text-primary-foreground">
+      <div className="flex min-w-0 items-center gap-3" style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+        <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-none bg-primary text-primary-foreground" style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', width: '32px', height: '32px', flexShrink: 0, marginRight: '4px' }}>
           <Activity size={16} strokeWidth={1.25} />
         </div>
-        <div className="min-w-0">
-          <span className="block text-sm font-bold leading-none tracking-tight">{title}</span>
-          <span className="font-mono text-[11px] text-muted-foreground">{subtitle}</span>
+        <div className="min-w-0" style={{ display: 'flex', flexDirection: 'column', marginRight: '12px' }}>
+          <span className="block text-sm font-bold leading-none tracking-tight" style={{ fontWeight: 700, fontSize: '13px', lineHeight: 1.2 }}>{title}</span>
+          <span className="font-mono text-[11px] text-muted-foreground" style={{ fontSize: '11px', color: 'var(--ink-secondary)', marginTop: '2px' }}>{subtitle}</span>
         </div>
-        <Separator orientation="vertical" className="h-6" />
+        <div style={{ width: '1px', height: '24px', backgroundColor: 'var(--border-subtle)', margin: '0 8px' }} />
         {stream === 'live' ? (
           <Badge
             variant="outline"
             data-testid="stream-badge"
             className="h-6 gap-1.5 rounded-none border-emerald-500/30 bg-emerald-500/10 px-2 font-mono text-[11px] text-emerald-600 dark:text-emerald-400"
+            style={{ display: 'inline-flex', alignItems: 'center', gap: '6px', padding: '0 8px', height: '24px', marginRight: '8px' }}
           >
-            <span className="h-1.5 w-1.5 rounded-none bg-emerald-500 animate-pulse" />
+            <span className="h-1.5 w-1.5 rounded-none bg-emerald-500 animate-pulse" style={{ width: '6px', height: '6px', borderRadius: '50%', backgroundColor: '#10b981', display: 'inline-block' }} />
             {streamLabel}
           </Badge>
         ) : (
@@ -84,12 +84,13 @@ export const CommandBar: React.FC<CommandBarProps> = ({
             variant="outline"
             data-testid="stream-badge"
             className="h-6 gap-1.5 rounded-none border-amber-500/40 bg-amber-500/10 px-2 font-mono text-[11px] text-amber-600 dark:text-amber-400"
+            style={{ display: 'inline-flex', alignItems: 'center', gap: '6px', padding: '0 8px', height: '24px', marginRight: '8px' }}
           >
-            <span className="h-1.5 w-1.5 rounded-none bg-amber-500" />
+            <span className="h-1.5 w-1.5 rounded-none bg-amber-500" style={{ width: '6px', height: '6px', borderRadius: '50%', backgroundColor: '#f59e0b', display: 'inline-block' }} />
             {streamLabel}
           </Badge>
         )}
-        <Badge variant="secondary" className="h-6 rounded-none font-mono text-[11px] tabular-nums">
+        <Badge variant="secondary" className="h-6 rounded-none font-mono text-[11px] tabular-nums" style={{ display: 'inline-flex', alignItems: 'center', padding: '0 8px', height: '24px', marginRight: '8px' }}>
           {stationCounter}
         </Badge>
         {timestamp ? (
@@ -97,6 +98,7 @@ export const CommandBar: React.FC<CommandBarProps> = ({
             variant="outline"
             data-testid="simulation-clock"
             className="h-6 rounded-none font-mono text-[11px] tabular-nums text-foreground"
+            style={{ display: 'inline-flex', alignItems: 'center', padding: '0 8px', height: '24px' }}
           >
             {timestamp}
           </Badge>

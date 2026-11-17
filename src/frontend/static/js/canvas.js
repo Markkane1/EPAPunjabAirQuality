@@ -100,10 +100,61 @@ export const limLabel = Q => {
   return ref ? `PEQS ${refavg} ${ref}` : 'no PEQS (scale ref. 100)';
 };
 
+// Refined, continuous multi-stop color scale for statutory PEPC AQI
+const AQI_STOPS = [
+  { val: 0,   rgb: [0, 176, 80] },    // Good #00B050
+  { val: 50,  rgb: [46, 185, 90] },   // Good upper
+  { val: 100, rgb: [146, 208, 80] },  // Satisfactory #92D050
+  { val: 150, rgb: [245, 215, 30] },  // Moderate #F5D71E
+  { val: 200, rgb: [237, 125, 49] },  // Unhealthy (Sensitive) #ED7D31
+  { val: 280, rgb: [225, 45, 35] },   // Unhealthy #E12D23
+  { val: 380, rgb: [112, 48, 160] },  // Very Unhealthy #7030A0
+  { val: 500, rgb: [160, 20, 40] },   // Hazardous #A01428
+  { val: 800, rgb: [90, 10, 25] },    // Severe Emergency
+];
+
+export function smoothAqiColor(v) {
+  if (v <= 0) return AQI_STOPS[0].rgb;
+  if (v >= 800) return AQI_STOPS[AQI_STOPS.length - 1].rgb;
+  for (let i = 1; i < AQI_STOPS.length; i++) {
+    if (v <= AQI_STOPS[i].val) {
+      const p0 = AQI_STOPS[i - 1];
+      const p1 = AQI_STOPS[i];
+      const t = (v - p0.val) / (p1.val - p0.val);
+      return [
+        Math.round(p0.rgb[0] + (p1.rgb[0] - p0.rgb[0]) * t),
+        Math.round(p0.rgb[1] + (p1.rgb[1] - p0.rgb[1]) * t),
+        Math.round(p0.rgb[2] + (p1.rgb[2] - p0.rgb[2]) * t),
+      ];
+    }
+  }
+  return AQI_STOPS[AQI_STOPS.length - 1].rgb;
+}
+
 export function colArr(v, r = 'aqi') {
   if (v === null || v === undefined || isNaN(v)) return [128, 128, 128];
-  if (r === 'aqi' || !r) return aqiCat(v)[3];
-  if (typeof r === 'string' && r.startsWith('bp:')) return AQI_B[bpIdx(v, r.slice(3))][3];
+  if (r === 'aqi' || !r) return smoothAqiColor(v);
+  if (typeof r === 'string' && r.startsWith('bp:')) {
+    const k = r.slice(3);
+    const b = BP[k];
+    if (b) {
+      const breaks = [0, ...b, b[b.length - 1] * 1.5];
+      const colors = AQI_B.map(item => item[3]);
+      for (let i = 1; i < breaks.length; i++) {
+        if (v <= breaks[i] || i === breaks.length - 1) {
+          const t = Math.max(0, Math.min(1, (v - breaks[i - 1]) / ((breaks[i] - breaks[i - 1]) || 1)));
+          const c0 = colors[Math.min(i - 1, colors.length - 1)];
+          const c1 = colors[Math.min(i, colors.length - 1)];
+          return [
+            Math.round(c0[0] + (c1[0] - c0[0]) * t),
+            Math.round(c0[1] + (c1[1] - c0[1]) * t),
+            Math.round(c0[2] + (c1[2] - c0[2]) * t),
+          ];
+        }
+      }
+    }
+    return AQI_B[bpIdx(v, k)][3];
+  }
   const numR = typeof r === 'number' ? r : 100;
   for (let i = 1; i < MULT.length; i++) {
     const x1 = MULT[i] * numR;
@@ -281,17 +332,26 @@ export class CanvasMapEngine {
   }
 
   resize() {
-    const rect = this.canvas.parentElement.getBoundingClientRect();
+    const parent = this.canvas.parentElement;
+    if (!parent) return;
+    const rect = parent.getBoundingClientRect();
     this.dpr = Math.min(2, window.devicePixelRatio || 1);
-    this.width = Math.floor(rect.width || 800);
 
-    // Compute standard parallel scale factor
-    this.S = this.width / ((B.lo1 - B.lo0) * KX);
-    this.height = Math.floor((B.la1 - B.la0) * this.S);
+    const geoW = (B.lo1 - B.lo0) * KX;
+    const geoH = (B.la1 - B.la0);
+
+    // Fit seamlessly within container bounds without vertical page blowout
+    const availW = Math.max(280, Math.floor(rect.width || 800));
+    const availH = Math.max(280, Math.floor(rect.height > 80 ? rect.height : (window.innerHeight - 170)));
+
+    this.S = Math.min(availW / geoW, availH / geoH);
+
+    this.width = Math.floor(geoW * this.S);
+    this.height = Math.floor(geoH * this.S);
 
     this.canvas.width = Math.round(this.width * this.dpr);
     this.canvas.height = Math.round(this.height * this.dpr);
-    this.canvas.style.width = '100%';
+    this.canvas.style.width = `${this.width}px`;
     this.canvas.style.height = `${this.height}px`;
 
     this.hitCanvas.width = this.width;
@@ -707,6 +767,17 @@ export class CanvasMapEngine {
     ctx.imageSmoothingEnabled = true;
     ctx.drawImage(this.fcCanvas, 0, 0, gw * 5, gh * 5);
     ctx.restore();
+
+    // Redraw 41 Inter-district administrative boundaries ON TOP of the continuous IDW surface
+    if (this.paths && this.paths.admPaths) {
+      ctx.save();
+      ctx.strokeStyle = 'rgba(255, 255, 255, 0.32)';
+      ctx.lineWidth = 0.85 * (1.0 / Math.sqrt(this.zoom));
+      for (const adm of this.paths.admPaths) {
+        ctx.stroke(adm.path);
+      }
+      ctx.restore();
+    }
   }
 
   // =========================================================================
@@ -990,7 +1061,7 @@ export class CanvasMapEngine {
     ctx.font = `600 ${fontPx}px "JetBrains Mono", monospace`;
 
     // Sort order: Selected district first, then monitored, then unmonitored
-    const sortedDistricts = [...this.districts].sort((a, b) => {
+    const sortedDistricts = this.districts.toSorted((a, b) => {
       if (a.name === this.selectedDistrict) return -1;
       if (b.name === this.selectedDistrict) return 1;
       return (a.est ? 1 : 0) - (b.est ? 1 : 0);
@@ -1120,77 +1191,34 @@ export class CanvasMapEngine {
       const x = f.xy[0];
       const y = f.xy[1];
 
-      // Base flame dimensions scaled by FRP (Fire Radiative Power)
+      // Base dimensions scaled by FRP (Fire Radiative Power in MW)
       const frp = f.frp || 20.0;
-      const r = Math.max(5.5, Math.min(13.0, 5.0 + Math.sqrt(frp) * 0.75)) * scaleFactor;
-      const w = r * 0.85;
-      const h = r * 1.35;
+      const coreR = Math.max(2.0, Math.min(4.5, 1.8 + Math.sqrt(frp) * 0.35)) * scaleFactor;
+      const glowR = coreR * 3.0;
 
-      // 1. Heat Aura Glow
+      // 1. Soft atmospheric infrared thermal bloom
+      const glow = ctx.createRadialGradient(x, y, 0, x, y, glowR);
+      glow.addColorStop(0, f.is_live ? 'rgba(255, 68, 0, 0.75)' : 'rgba(255, 120, 20, 0.45)');
+      glow.addColorStop(0.45, f.is_live ? 'rgba(255, 40, 0, 0.30)' : 'rgba(255, 80, 0, 0.15)');
+      glow.addColorStop(1, 'rgba(255, 20, 0, 0)');
+
+      ctx.fillStyle = glow;
       ctx.beginPath();
-      const auraGrad = ctx.createRadialGradient(x, y - h * 0.2, 0, x, y - h * 0.2, r * 2.2);
-      if (f.is_live) {
-        auraGrad.addColorStop(0, 'rgba(255, 50, 0, 0.65)');
-        auraGrad.addColorStop(0.5, 'rgba(255, 120, 0, 0.3)');
-        auraGrad.addColorStop(1, 'rgba(255, 60, 0, 0)');
-      } else {
-        auraGrad.addColorStop(0, 'rgba(255, 80, 0, 0.45)');
-        auraGrad.addColorStop(0.6, 'rgba(255, 140, 0, 0.15)');
-        auraGrad.addColorStop(1, 'rgba(255, 80, 0, 0)');
-      }
-      ctx.fillStyle = auraGrad;
-      ctx.arc(x, y - h * 0.2, r * 2.2, 0, Math.PI * 2);
+      ctx.arc(x, y, glowR, 0, Math.PI * 2);
       ctx.fill();
 
-      // 2. Outer Flame Body
+      // 2. High-intensity satellite thermal detection pinpoint
+      ctx.fillStyle = f.is_live ? '#fffde7' : '#ffe082';
       ctx.beginPath();
-      ctx.moveTo(x, y - h); // top flame tip
-      ctx.bezierCurveTo(x + w * 0.6, y - h * 0.35, x + w, y + h * 0.25, x + w * 0.5, y + h * 0.65);
-      ctx.bezierCurveTo(x + w * 0.2, y + h * 0.9, x - w * 0.2, y + h * 0.9, x - w * 0.5, y + h * 0.65);
-      ctx.bezierCurveTo(x - w, y + h * 0.25, x - w * 0.6, y - h * 0.35, x, y - h);
-      ctx.closePath();
-
-      const flameGrad = ctx.createLinearGradient(x, y - h, x, y + h * 0.7);
-      flameGrad.addColorStop(0, '#ff1a00');
-      flameGrad.addColorStop(0.45, '#ff6a00');
-      flameGrad.addColorStop(1, '#ffc400');
-      ctx.fillStyle = flameGrad;
+      ctx.arc(x, y, coreR * 0.7, 0, Math.PI * 2);
       ctx.fill();
 
-      // Outer flame border stroke
-      ctx.strokeStyle = 'rgba(20, 8, 4, 0.85)';
-      ctx.lineWidth = 0.85 * scaleFactor;
+      // 3. Subtle outer corona ring
+      ctx.strokeStyle = f.is_live ? 'rgba(255, 50, 0, 0.9)' : 'rgba(255, 110, 0, 0.6)';
+      ctx.lineWidth = 0.8 * scaleFactor;
+      ctx.beginPath();
+      ctx.arc(x, y, coreR, 0, Math.PI * 2);
       ctx.stroke();
-
-      // 3. Inner White/Yellow Hot Core
-      const iw = w * 0.48;
-      const ih = h * 0.52;
-      const iy = y + h * 0.05;
-
-      ctx.beginPath();
-      ctx.moveTo(x, iy - ih);
-      ctx.bezierCurveTo(x + iw * 0.6, iy - ih * 0.3, x + iw, iy + ih * 0.2, x + iw * 0.5, iy + ih * 0.6);
-      ctx.bezierCurveTo(x + iw * 0.2, iy + ih * 0.85, x - iw * 0.2, iy + ih * 0.85, x - iw * 0.5, iy + ih * 0.6);
-      ctx.bezierCurveTo(x - iw, iy + ih * 0.2, x - iw * 0.6, iy - ih * 0.3, x, iy - ih);
-      ctx.closePath();
-
-      const coreGrad = ctx.createLinearGradient(x, iy - ih, x, iy + ih);
-      coreGrad.addColorStop(0, '#ffffff');
-      coreGrad.addColorStop(0.5, '#fff176');
-      coreGrad.addColorStop(1, '#ffb300');
-      ctx.fillStyle = coreGrad;
-      ctx.fill();
-
-      // 4. Live Fire Beacon Indicator (if current live hotspot)
-      if (f.is_live) {
-        ctx.beginPath();
-        ctx.arc(x, y - h - 2.5 * scaleFactor, 1.6 * scaleFactor, 0, Math.PI * 2);
-        ctx.fillStyle = '#ff2200';
-        ctx.fill();
-        ctx.strokeStyle = '#ffffff';
-        ctx.lineWidth = 0.6 * scaleFactor;
-        ctx.stroke();
-      }
     }
     ctx.restore();
   }

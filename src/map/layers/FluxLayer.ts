@@ -117,9 +117,9 @@ export function createFluxLayers(props: FluxLayerProps): Layer[] {
     }
   }
 
-  // Truncate to top 60 coupled pathways
+  // Truncate to top 15 primary coupled advection pathways to avoid visual clutter
   links.sort((a, b) => b.flux - a.flux);
-  const top60Links = links.slice(0, 60);
+  const topLinks = links.slice(0, 15);
 
   // Compute 39 border normal chevrons
   const chevrons: BorderChevron[] = [];
@@ -168,17 +168,17 @@ export function createFluxLayers(props: FluxLayerProps): Layer[] {
 
   const layers: Layer[] = [];
 
-  // 1. Inter-District Advection Mass Flux Arcs
-  if (top60Links.length > 0) {
+  // 1. Inter-District Advection Mass Flux Arcs (Subtle Atmospheric Curves)
+  if (topLinks.length > 0) {
     layers.push(
       new ArcLayer({
         id: 'advection-flux-arcs',
-        data: top60Links,
+        data: topLinks,
         getSourcePosition: (d: AdvectionLink) => d.sourceCoords,
         getTargetPosition: (d: AdvectionLink) => d.targetCoords,
-        getSourceColor: [56, 189, 248, 220], // Sky blue #38bdf8
-        getTargetColor: [244, 63, 94, 220],  // Rose #f43f5e
-        getWidth: (d: AdvectionLink) => Math.max(1.2, Math.min(6.0, Math.sqrt(d.flux) * 0.8)),
+        getSourceColor: [56, 189, 248, 85], // Subtle sky blue #38bdf8 with soft alpha
+        getTargetColor: [244, 63, 94, 85],  // Subtle rose #f43f5e with soft alpha
+        getWidth: (d: AdvectionLink) => Math.max(1.0, Math.min(2.5, Math.sqrt(d.flux) * 0.4)),
         widthUnits: 'pixels',
         pickable: true,
         onHover: props.onHover,

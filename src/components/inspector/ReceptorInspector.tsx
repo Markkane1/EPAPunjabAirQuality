@@ -43,7 +43,8 @@ function CpfRose({ sectors }: { sectors: WorkstationModel['sectors'] }) {
           cx={cx}
           cy={cy}
           r={radius * scale}
-          className="fill-none stroke-border"
+          fill="none"
+          stroke="var(--border-strong, #4f625e)"
           strokeDasharray={scale === 0.25 ? '2 2' : undefined}
           strokeWidth={scale === 0.25 ? 1.25 : 1}
         />
@@ -64,7 +65,8 @@ function CpfRose({ sectors }: { sectors: WorkstationModel['sectors'] }) {
           <path
             key={sector.sectorIndex}
             d={d}
-            className={visible ? 'fill-primary/25 stroke-primary' : 'fill-transparent stroke-muted-foreground'}
+            fill={visible ? 'rgba(0, 176, 80, 0.25)' : 'none'}
+            stroke={visible ? '#00B050' : 'var(--ink-tertiary, #a8bbb5)'}
             strokeDasharray={visible ? undefined : '3 3'}
             strokeWidth={1}
           />
@@ -160,13 +162,21 @@ export const ReceptorInspector: React.FC<ReceptorInspectorProps> = ({
               </CardDescription>
             </CardHeader>
             <CardContent className="p-3.5 pt-2">
-              <div className="flex items-end justify-between gap-2">
+              <div className="flex items-end justify-between gap-2" style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '8px', paddingRight: '8px' }}>
                 <div className="font-mono text-3xl font-extrabold tabular-nums">
                   {compositeAqi === null ? '—' : Math.round(compositeAqi)}
                 </div>
                 <Badge
                   className="rounded-none border-0 text-white"
-                  style={{ backgroundColor: compositePaint.hex, color: compositePaint.text }}
+                  style={{
+                    backgroundColor: compositePaint.hex,
+                    color: compositePaint.text,
+                    padding: '4px 8px',
+                    fontSize: '11px',
+                    fontWeight: 600,
+                    whiteSpace: 'nowrap',
+                    flexShrink: 0
+                  }}
                 >
                   {compositePaint.label}
                 </Badge>

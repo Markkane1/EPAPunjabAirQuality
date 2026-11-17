@@ -276,7 +276,7 @@ export function statutorySubIndex(pollutant: PollutantKey, concentration: number
 
 function median(values: number[]): number {
   if (values.length === 0) return 0;
-  const sorted = [...values].sort((a, b) => a - b);
+  const sorted = values.toSorted((a, b) => a - b);
   const mid = Math.floor(sorted.length / 2);
   return sorted.length % 2 === 1 ? sorted[mid] : (sorted[mid - 1] + sorted[mid]) / 2;
 }
@@ -361,8 +361,7 @@ export function buildWorkstationModel(input: WorkstationInput) {
   const query = input.search.trim().toLowerCase();
   const districts = input.districtRows
     .filter((row) => query.length === 0 || row.name.toLowerCase().includes(query))
-    .slice()
-    .sort((a, b) => (b.value ?? -Infinity) - (a.value ?? -Infinity))
+    .toSorted((a, b) => (b.value ?? -Infinity) - (a.value ?? -Infinity))
     .map((row, index) => {
       const paint = pepcColorForAqi(row.aqi);
       return {

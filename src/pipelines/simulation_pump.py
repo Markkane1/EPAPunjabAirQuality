@@ -79,8 +79,11 @@ class SimulationPump:
         nwp_winds: Dict[str, tuple[float, float]] = {}
         for r in open_meteo_reports:
             d_name = r.get("district")
-            if d_name and "u_calibrated" in r and "v_calibrated" in r:
-                nwp_winds[d_name] = (float(r["u_calibrated"]), float(r["v_calibrated"]))
+            if d_name and r.get("u_calibrated") is not None and r.get("v_calibrated") is not None:
+                try:
+                    nwp_winds[d_name] = (float(r["u_calibrated"]), float(r["v_calibrated"]))
+                except (ValueError, TypeError):
+                    pass
 
         # 4. Fetch Auxiliary Feeds (FIRMS, IQAir, CAMS)
         fires = self.firms_worker.get_fallback()

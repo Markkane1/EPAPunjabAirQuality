@@ -190,11 +190,23 @@ def create_application() -> FastAPI:
         if dist_index.exists():
             return FileResponse(dist_index)
         html_file = frontend_dir / "dashboard.html"
-        if not html_file.exists():
-            html_file = frontend_dir / "index.html"
         if html_file.exists():
             return FileResponse(html_file)
-        return JSONResponse(status_code=status.HTTP_404_NOT_FOUND, content={"message": "Frontend dashboard not found"})
+        return JSONResponse(status_code=status.HTTP_404_NOT_FOUND, content={"message": "Frontend not found"})
+
+    @app.get("/workstation", include_in_schema=False)
+    async def serve_workstation():
+        dist_workstation = dist_dir / "workstation.html"
+        if dist_workstation.exists():
+            return FileResponse(dist_workstation)
+        return FileResponse(frontend_dir / "dashboard.html")
+
+    @app.get("/dashboard", include_in_schema=False)
+    async def serve_dashboard():
+        html_file = frontend_dir / "dashboard.html"
+        if html_file.exists():
+            return FileResponse(html_file)
+        return JSONResponse(status_code=status.HTTP_404_NOT_FOUND, content={"message": "Dashboard not found"})
 
     # Initialize in-memory state
     init_app_state(app)

@@ -1,0 +1,2336 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Punjab Air — map preview</title>
+<style>
+  @font-face {
+    font-family: Outfit;
+    font-style: normal;
+    font-weight: 400 600;
+    font-display: swap;
+    src: url("fonts/outfit-latin.woff2") format("woff2");
+  }
+  @font-face {
+    font-family: Fraunces;
+    font-style: normal;
+    font-weight: 560;
+    font-display: swap;
+    src: url("fonts/fraunces-latin.woff2") format("woff2");
+  }
+  @font-face {
+    font-family: Fraunces;
+    font-style: italic;
+    font-weight: 520;
+    font-display: swap;
+    src: url("fonts/fraunces-italic-latin.woff2") format("woff2");
+  }
+  :root {
+    --ink: #241c16;
+    --ink-soft: #5c5146;
+    --paper: rgba(255, 250, 244, 0.8);
+    --line: rgba(36, 28, 22, 0.1);
+    --ease: cubic-bezier(0.22, 1, 0.36, 1);
+    --panel-left: 20px;
+    --panel-width: 336px;
+  }
+  * { box-sizing: border-box; }
+  html, body { margin: 0; height: 100%; background: #c5d6de; color: var(--ink); }
+  body {
+    font-family: Outfit, "Segoe UI", sans-serif;
+    font-weight: 400;
+    font-synthesis: none;
+    overflow: hidden;
+  }
+  button, input { font: inherit; color: inherit; }
+  button { cursor: pointer; }
+  button:focus-visible, input:focus-visible { outline: 2px solid var(--ink); outline-offset: 2px; }
+  canvas { position: fixed; inset: 0; width: 100%; height: 100%; z-index: 0; touch-action: none; }
+  .glass {
+    background: var(--paper);
+    backdrop-filter: blur(18px) saturate(1.2);
+    box-shadow: 0 18px 50px rgba(48, 36, 18, 0.12);
+    border: 1px solid rgba(255, 255, 255, 0.65);
+  }
+  aside.glass,
+  #layers .layer.glass,
+  .zoom button {
+    background: #fff;
+    backdrop-filter: none;
+    border-color: rgba(15, 23, 42, 0.08);
+  }
+  #layers .layer.glass.on {
+    background: var(--ink);
+    color: #fff;
+  }
+  header {
+    position: fixed; z-index: 3; top: 16px; left: 20px; right: 20px;
+    display: grid; grid-template-columns: auto 1fr auto;
+    gap: 16px; align-items: center; pointer-events: none;
+  }
+  header > * { pointer-events: auto; }
+  .brand h1 {
+    margin: 0; font-family: Outfit, "Segoe UI", sans-serif; font-weight: 600;
+    font-size: 22px; letter-spacing: -0.03em; line-height: 1;
+  }
+  .brand h1 em { font-style: normal; }
+  .brand p { margin: 3px 0 0; color: var(--ink-soft); font-size: 13px; white-space: nowrap; }
+  .search {
+    position: absolute; z-index: 5; left: 50%; top: 50%;
+    width: min(460px, calc(100% - 420px));
+    transform: translate(-50%, calc(-50% - 84px));
+    opacity: 0; visibility: hidden; pointer-events: none;
+    transition: transform .45s var(--ease), opacity .32s var(--ease), visibility 0s linear .45s;
+  }
+  body.search-open .search {
+    transform: translate(-50%, -50%);
+    opacity: 1; visibility: visible; pointer-events: auto;
+    transition: transform .45s var(--ease), opacity .32s var(--ease), visibility 0s;
+  }
+  .search input {
+    width: 100%; border: 0; border-radius: 999px; padding: 12px 16px;
+    background: var(--paper); backdrop-filter: blur(18px);
+    box-shadow: 0 10px 30px rgba(48, 36, 18, 0.1);
+  }
+  .search ul {
+    list-style: none; margin: 8px 0 0; padding: 6px; border-radius: 18px;
+    position: absolute; left: 0; right: 0; max-height: 280px; overflow: auto;
+  }
+  .search li { padding: 8px 10px; border-radius: 12px; cursor: pointer; display: flex; justify-content: space-between; gap: 12px; }
+  .search li:hover, .search li[aria-selected="true"] { background: rgba(36, 28, 22, 0.06); }
+  .search small { color: var(--ink-soft); }
+  .end { display: flex; flex-direction: column; align-items: flex-end; gap: 8px; }
+  .views {
+    display: flex; gap: 2px; padding: 3px; border-radius: 999px;
+  }
+  .views button {
+    border: 0; background: transparent; border-radius: 999px;
+    padding: 6px 12px; font-size: 13px; font-weight: 500;
+  }
+  .views button.on { background: var(--ink); color: #f6f1e8; }
+  .clock { text-align: right; }
+  .clock strong {
+    display: block; font-weight: 600; font-size: 14px;
+    font-variant-numeric: tabular-nums lining-nums;
+  }
+  .clock span { color: var(--ink-soft); font-size: 12px; }
+  aside {
+    position: fixed; z-index: 3; left: var(--panel-left); top: 84px; bottom: 16px; width: var(--panel-width);
+    overflow: auto; border-radius: 24px; padding: 16px 16px 18px;
+    scrollbar-width: thin; scrollbar-color: rgba(36, 28, 22, 0.2) transparent;
+    transition: transform .4s var(--ease);
+  }
+  #panelToggle {
+    position: fixed; z-index: 4;
+    left: calc(var(--panel-left) + var(--panel-width) - 16px);
+    top: 156px; width: 36px; height: 36px; padding: 0;
+    border: 0; border-radius: 10px; background: #fff; color: #3a332c;
+    box-shadow: 0 4px 14px rgba(15, 23, 42, 0.16);
+    display: grid; place-items: center;
+    transition: left .4s var(--ease), top .4s var(--ease);
+  }
+  #panelToggle svg { display: block; transition: transform .4s var(--ease); }
+  #searchToggle {
+    position: fixed; z-index: 4;
+    left: calc(var(--panel-left) + var(--panel-width) - 16px);
+    top: 112px; width: 36px; height: 36px; padding: 0;
+    border: 0; border-radius: 10px; background: #fff; color: #3a332c;
+    box-shadow: 0 4px 14px rgba(15, 23, 42, 0.16);
+    display: grid; place-items: center;
+    transition: left .4s var(--ease), top .4s var(--ease), background .35s var(--ease), color .35s var(--ease);
+  }
+  #searchToggle svg { display: block; }
+  #searchToggle .icon-close { display: none; }
+  body.search-open #searchToggle { background: var(--ink); color: #fff; }
+  body.search-open #searchToggle .icon-search { display: none; }
+  body.search-open #searchToggle .icon-close { display: block; }
+  body.panel-hidden aside {
+    transform: translateX(calc(-100% - 28px));
+    pointer-events: none;
+  }
+  body.panel-hidden #panelToggle { left: 10px; top: 156px; }
+  body.panel-hidden #searchToggle { left: 10px; top: 112px; }
+  body.panel-hidden #panelToggle svg { transform: rotate(180deg); }
+  body.panel-hidden footer { left: 20px; }
+  aside::-webkit-scrollbar { width: 8px; }
+  aside::-webkit-scrollbar-thumb { background: rgba(36, 28, 22, 0.2); border-radius: 99px; }
+  .kicker { margin: 0; color: var(--ink-soft); font-size: 13px; }
+  h2.place {
+    margin: 8px 0 0; font-family: Fraunces, Georgia, serif; font-style: italic;
+    font-weight: 520; font-size: 32px; letter-spacing: -0.03em; line-height: 1.05;
+    color: var(--ink);
+  }
+  .readout { display: flex; align-items: center; gap: 12px; margin-top: 8px; }
+  .pool {
+    width: 8px; height: 52px; border-radius: 99px; flex: none;
+    transition: background .6s var(--ease), color .6s var(--ease);
+  }
+  .num {
+    font-family: Fraunces, Georgia, serif; font-weight: 560; font-size: 58px;
+    letter-spacing: -0.04em; line-height: 0.85;
+    font-variant-numeric: lining-nums tabular-nums;
+    font-feature-settings: "lnum" 1, "tnum" 1;
+  }
+  .band { margin: 4px 0 0; font-size: 14px; font-weight: 500; }
+  .place-top { display: flex; align-items: center; min-height: 28px; }
+  .station-badge {
+    display: inline-flex; align-items: center; gap: 6px; height: 28px; padding: 0 10px 0 8px;
+    border-radius: 999px; background: rgba(36, 28, 22, 0.06); color: var(--ink);
+    font-size: 12px; font-weight: 600;
+  }
+  .station-badge svg { display: block; flex: none; }
+  .station-where { margin: 4px 0 0; color: var(--ink-soft); font-size: 14px; line-height: 1.35; }
+  .station-facts {
+    display: grid; grid-template-columns: 1fr 1fr; gap: 10px 12px;
+    margin: 12px 0 0; padding: 0;
+  }
+  .station-facts div { min-width: 0; }
+  .station-facts .wide { grid-column: 1 / -1; }
+  .station-facts dt { margin: 0; color: var(--ink-soft); font-size: 11px; font-weight: 600; letter-spacing: 0.04em; text-transform: uppercase; }
+  .station-facts dd { margin: 2px 0 0; font-size: 14px; font-weight: 600; line-height: 1.3; font-variant-numeric: tabular-nums; }
+  .card-when { display: block; margin: 4px 0 0; color: var(--ink-soft); font-size: 13px; font-variant-numeric: tabular-nums; }
+  .aqi-card { margin-top: 14px; border-radius: 18px; padding: 14px 14px 12px; }
+  .aqi-top { display: flex; align-items: center; justify-content: space-between; gap: 12px; }
+  .aqi-num { font-family: Fraunces, Georgia, serif; font-weight: 560; font-size: 46px; letter-spacing: -0.04em; line-height: 0.9; }
+  .aqi-unit { margin-top: 4px; font-size: 12px; font-weight: 600; letter-spacing: 0.08em; }
+  .aqi-band { font-size: 22px; font-weight: 600; letter-spacing: -0.03em; line-height: 1.1; text-align: right; }
+  .aqi-split {
+    display: flex; justify-content: space-between; gap: 12px; align-items: baseline;
+    margin-top: 12px; padding-top: 10px;
+    border-top: 1px solid color-mix(in srgb, currentColor 30%, transparent);
+    font-size: 14px;
+  }
+  .aqi-split b { font-weight: 600; }
+  .sentence {
+    margin: 10px 0 0; font-size: 14px; font-weight: 400; line-height: 1.4; max-width: 36ch;
+  }
+  .history { margin-top: 16px; }
+  .history-head { display: flex; justify-content: space-between; align-items: baseline; gap: 8px; margin-bottom: 8px; }
+  .history-head b { font-size: 16px; font-weight: 600; }
+  .history-head span { color: var(--ink-soft); font-size: 12px; }
+  .history-plot { display: grid; grid-template-columns: 36px 1fr; gap: 6px; height: 124px; }
+  .history-axis {
+    display: flex; flex-direction: column; justify-content: space-between;
+    color: var(--ink-soft); font-size: 11px; font-variant-numeric: tabular-nums; text-align: right;
+  }
+  .history-plot svg { width: 100%; height: 100%; }
+  .hour-facts { margin-top: 14px; }
+  .details-btn {
+    width: 100%; margin-top: 14px; height: 44px; border: 0; border-radius: 12px;
+    background: var(--ink); color: #fff; font-weight: 600; font-size: 15px;
+  }
+  .details-btn:active { transform: scale(0.99); }
+  #details { margin-top: 12px; }
+  #details[hidden] { display: none; }
+  .pols { display: flex; flex-wrap: wrap; gap: 4px; margin: 12px 0 4px; }
+  .pols button, .layer, .zoom button, .texty {
+    border: 0; border-radius: 999px; background: rgba(36, 28, 22, 0.05);
+    transition: background .35s var(--ease), color .35s var(--ease), transform .2s var(--ease);
+  }
+  .pols button { padding: 5px 9px; font-size: 12px; font-weight: 500; flex: none; }
+  .pols button.on, .layer.on { background: var(--ink); color: #f6f1e8; }
+  .pols button:active, .layer:active, .zoom button:active { transform: scale(0.97); }
+  .meters { margin-top: 8px; display: grid; gap: 3px; }
+  .meter { display: grid; grid-template-columns: 48px 1fr 78px; gap: 8px; align-items: center; font-size: 12px; }
+  .meter b { font-weight: 500; }
+  .meter span { text-align: right; font-variant-numeric: tabular-nums lining-nums; }
+  .track { height: 4px; border-radius: 99px; background: rgba(36, 28, 22, 0.08); overflow: hidden; }
+  .track i { display: block; height: 100%; width: 0; border-radius: inherit; transition: width .45s var(--ease), background .45s var(--ease); }
+  svg.spark { width: 100%; height: 40px; margin-top: 10px; display: block; }
+  aside h2:not(.place) { margin: 12px 0 4px; font-size: 12px; font-weight: 600; color: var(--ink-soft); }
+  .row {
+    width: 100%; display: grid; grid-template-columns: 14px 1fr auto; gap: 8px;
+    align-items: center; text-align: left; background: transparent; border: 0;
+    padding: 5px 4px; border-radius: 10px;
+  }
+  .row.on { background: rgba(36, 28, 22, 0.06); }
+  .dot { width: 10px; height: 10px; border-radius: 99px; }
+  .row em { font-style: normal; color: var(--ink-soft); font-size: 12px; }
+  .more {
+    margin-top: 8px; background: transparent; border: 0; padding: 0;
+    text-decoration: underline; text-underline-offset: 3px; color: var(--ink-soft);
+  }
+  .note { margin: 12px 0 4px; color: var(--ink-soft); font-size: 12px; line-height: 1.45; }
+  .fires { margin-top: 10px; padding-top: 8px; border-top: 1px solid var(--line); }
+  .fires p { margin: 2px 0 0; font-size: 13px; line-height: 1.35; }
+  .fires b { font-weight: 600; font-variant-numeric: tabular-nums; }
+  .flame-svg { display: block; flex: none; }
+  .back {
+    display: inline-flex; align-items: center; gap: 6px;
+    margin: 0 0 16px; padding: 0; border: 0; background: none;
+    color: #3d6cb5; font-size: 15px; font-weight: 500;
+  }
+  .fire-head { display: flex; align-items: center; gap: 8px; }
+  .fire-title {
+    margin: 0; font-family: Outfit, Segoe UI, sans-serif; font-style: normal;
+    font-weight: 600; font-size: 26px; letter-spacing: -0.03em; line-height: 1;
+  }
+  p.iq-label { margin: 18px 0 8px; font-size: 16px; font-weight: 600; color: var(--ink); }
+  .iq-card, .source-card {
+    border: 1px solid rgba(15, 23, 42, 0.08); border-radius: 16px;
+    background: #fff;
+  }
+  .iq-card { padding: 2px 12px; }
+  .iq-row {
+    display: flex; align-items: center; justify-content: space-between; gap: 8px;
+    padding: 11px 0; border-top: 1px solid rgba(36, 28, 22, 0.08); font-size: 14px;
+  }
+  .iq-row:first-child { border-top: 0; }
+  .cor-line span { line-height: 1.35; }
+  .cor-hops { list-style: none; margin: 8px 0 0; padding: 0; }
+  .cor-hops li {
+    padding: 8px 0;
+    border-top: 1px solid rgba(36, 28, 22, 0.08);
+    font-size: 13px;
+  }
+  .pill {
+    display: inline-flex; align-items: center; gap: 5px;
+    padding: 5px 10px; border-radius: 999px; background: #f4f5f7;
+    font-size: 13px; font-weight: 500; font-variant-numeric: tabular-nums;
+    white-space: nowrap;
+  }
+  .flames { display: inline-flex; align-items: flex-end; gap: 1px; }
+  .mini-flame { display: block; flex: none; }
+  .source-card {
+    display: flex; align-items: center; gap: 12px;
+    padding: 12px 14px; text-decoration: none; color: inherit;
+  }
+  .nasa-mark {
+    width: 40px; height: 40px; border-radius: 99px; flex: none;
+    display: grid; place-items: center; background: #0b3d91; color: #fff;
+    font-size: 9px; font-weight: 700; letter-spacing: 0.06em;
+  }
+  .source-card b { display: block; font-size: 15px; font-weight: 600; }
+  .source-card small { display: inline-flex; align-items: center; gap: 4px; color: #2f6fad; font-size: 13px; }
+  #layers, .zoom {
+    position: fixed; z-index: 3; right: 22px; display: flex; flex-direction: column; gap: 8px; align-items: flex-end;
+  }
+  #layers { top: 84px; }
+  .layer { padding: 8px 14px; box-shadow: 0 8px 22px rgba(48, 36, 18, 0.08); white-space: nowrap; }
+  .zoom { bottom: 92px; }
+  .zoom button {
+    width: 40px; height: 40px;
+    background: #fff;
+    box-shadow: 0 8px 22px rgba(15, 23, 42, 0.12);
+  }
+  .zoom .wide { width: auto; padding: 0 12px; font-size: 13px; }
+  footer {
+    position: fixed; z-index: 3; left: calc(var(--panel-left) + var(--panel-width) + 16px); right: 20px; bottom: 14px;
+    display: grid; grid-template-columns: minmax(220px, 1fr) minmax(280px, 1.3fr); gap: 8px; align-items: center;
+    transition: left .4s var(--ease);
+  }
+  .legend { display: flex; align-items: flex-end; gap: 8px; padding: 8px 12px; border-radius: 16px; }
+  .swatch { flex: 1; }
+  .swatch b {
+    display: block; height: 8px; border-radius: 99px;
+    background: linear-gradient(90deg, #00b050 0 14.3%, #92d050 14.3% 28.6%, #ffff00 28.6% 42.9%, #ed7d31 42.9% 57.1%, #ff0000 57.1% 71.4%, #7030a0 71.4% 85.7%, #c00000 85.7% 100%);
+  }
+  .swatch span { display: flex; justify-content: space-between; font-size: 11px; color: var(--ink-soft); margin-top: 4px; }
+  .swatch span i { font-style: normal; }
+  .scrub { display: grid; grid-template-columns: auto 1fr; gap: 10px; align-items: center; padding: 8px 12px; border-radius: 16px; }
+  .scrub button { width: 36px; height: 36px; border: 0; border-radius: 99px; background: var(--ink); color: #f6f1e8; }
+  input[type="range"] { width: 100%; accent-color: #241c16; }
+  #tip {
+    position: fixed; z-index: 4; pointer-events: none; display: none;
+    padding: 6px 10px; border-radius: 12px; font-size: 13px;
+    transform: translate(-50%, -140%);
+  }
+  @media (max-width: 860px) {
+    header { grid-template-columns: 1fr; top: 10px; left: 12px; right: 12px; }
+    .end { flex-direction: row; align-items: center; justify-content: space-between; }
+    aside { left: 12px; right: 12px; width: auto; top: auto; bottom: 86px; max-height: 40vh; }
+    .search { width: calc(100% - 8px); transform: translate(-50%, calc(-50% - 84px)); }
+    body.search-open .search { transform: translate(-50%, -50%); }
+    #panelToggle { left: auto; right: 18px; top: auto; bottom: 42vh; }
+    #searchToggle { left: auto; right: 18px; top: auto; bottom: calc(42vh + 44px); }
+    body.panel-hidden aside { transform: translateY(130%); }
+    body.panel-hidden #panelToggle { right: 18px; bottom: 96px; left: auto; top: auto; }
+    body.panel-hidden #searchToggle { right: 18px; bottom: 140px; left: auto; top: auto; }
+    body.panel-hidden footer { left: 12px; }
+    footer { left: 12px; right: 12px; grid-template-columns: 1fr; }
+    #layers { top: auto; bottom: 168px; }
+    .zoom { bottom: 148px; right: 118px; flex-direction: row; }
+    .brand p { white-space: normal; }
+  }
+  @media (prefers-reduced-motion: reduce) {
+    *, *::before, *::after {
+      animation: none !important; transition: none !important;
+    }
+  }
+</style>
+</head>
+<body>
+<canvas id="map" aria-label="Map of Pakistan and the countries on its border"></canvas>
+<header>
+  <div class="brand">
+    <h1>Punjab Air</h1>
+    <p>Pakistan and its neighbors</p>
+  </div>
+  <form class="search" id="search" role="search">
+    <input id="q" type="search" placeholder="Search a district, station, or city" autocomplete="off" aria-label="Search the map">
+    <ul id="results" class="glass" hidden></ul>
+  </form>
+  <div class="end">
+    <div class="views glass" role="group" aria-label="Map frame">
+      <button type="button" id="fit" class="on">Neighborhood</button>
+      <button type="button" id="plains">Plains</button>
+    </div>
+    <div class="clock">
+      <strong id="when">—</strong>
+      <span id="whenSub">Episode hour</span>
+    </div>
+  </div>
+</header>
+<aside id="card" class="glass" aria-live="polite"></aside>
+<button type="button" id="searchToggle" aria-controls="search" aria-expanded="false" aria-label="Show search">
+  <svg class="icon-search" viewBox="0 0 16 16" width="16" height="16" aria-hidden="true">
+    <circle cx="7" cy="7" r="4.25" fill="none" stroke="currentColor" stroke-width="1.7"/>
+    <path d="M10.3 10.3 13.2 13.2" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round"/>
+  </svg>
+  <svg class="icon-close" viewBox="0 0 16 16" width="16" height="16" aria-hidden="true">
+    <path d="M4 4.5 12 12.5M12 4.5 4 12.5" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round"/>
+  </svg>
+</button>
+<button type="button" id="panelToggle" aria-controls="card" aria-expanded="true" aria-label="Hide panel">
+  <svg viewBox="0 0 16 16" width="16" height="16" aria-hidden="true">
+    <path d="M10 3.5 5.5 8 10 12.5" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"/>
+  </svg>
+</button>
+<div id="layers"></div>
+<div class="zoom">
+  <button type="button" id="zin" aria-label="Zoom in">+</button>
+  <button type="button" id="zout" aria-label="Zoom out">−</button>
+</div>
+<footer>
+  <div class="legend glass">
+    <div class="swatch">
+      <b></b>
+      <span><i>Good</i><i>Moderate</i><i>Unhealthy</i><i>Hazardous</i></span>
+    </div>
+  </div>
+  <div class="scrub glass">
+    <button type="button" id="play" aria-label="Play the episode">▶</button>
+    <input id="hour" type="range" min="0" max="71" value="71" aria-label="Hour in the episode">
+  </div>
+</footer>
+<div id="tip" class="glass"></div>
+<script src="atlas.js?v=station1"></script>
+<script src="wind-grid.js?v=flow1"></script>
+<script src="cams-boundary.js?v=cams1"></script>
+<script src="corridors.js?v=cor4"></script>
+<script>
+window.onerror = function (msg) {
+  const el = document.createElement("p");
+  el.textContent = "The map stopped: " + msg;
+  el.style.cssText = "position:fixed;z-index:9;left:16px;right:16px;bottom:16px;background:#fffaf4;color:#241c16;padding:12px 16px;border-radius:12px;font:16px Segoe UI,sans-serif;";
+  document.body.appendChild(el);
+};
+const A = window.ATLAS;
+if (!A) throw new Error("atlas.js did not load beside index.html");
+const F = A.frame;
+const KX = Math.cos(24 * Math.PI / 180);
+const WORLD_W = (F.lo1 - F.lo0) * KX;
+const WORLD_H = F.la1 - F.la0;
+const reduced = matchMedia("(prefers-reduced-motion: reduce)").matches;
+
+const FILL = {
+  Pakistan: "#f4ecdc",
+  India: "#efe6d4",
+  Afghanistan: "#e6dccb",
+  Iran: "#e4d8c6",
+  China: "#e7dfd2",
+  Nepal: "#e8dfd0",
+  Bhutan: "#e8dfd0",
+  Bangladesh: "#e7decc",
+  "Sri Lanka": "#eadfcb",
+  Tajikistan: "#e3d9c8",
+  Turkmenistan: "#e2d6c2",
+  Myanmar: "#e6ddd0",
+  Oman: "#e7d9c4",
+};
+const STOPS = [0, 50, 100, 150, 200, 300, 400, 520];
+const AQI_RGB = [[0,[0,176,80]],[50,[46,185,90]],[100,[146,208,80]],[150,[245,215,30]],[200,[237,125,49]],[280,[225,45,35]],[380,[112,48,160]],[500,[160,20,40]],[800,[90,10,25]]];
+const BP = { PM10:[75,150,250,350,450,550], "PM2.5":[15,35,70,140,250,350], SO2:[60,120,220,320,800,1600], NO2:[40,80,130,180,380,580], O3:[65,130,195,260,450,550], CO:[2.5,5,7.5,10,25,40], NO:[40,80,130,180,280,400] };
+const TIER_RGB = [[0,176,80],[146,208,80],[255,255,0],[237,125,49],[255,0,0],[112,48,160],[192,0,0]];
+const NAMES = ["Good", "Satisfactory", "Moderate", "Unhealthy for sensitive groups", "Unhealthy", "Very unhealthy", "Hazardous"];
+const SCALE = {
+  AQI: [0, 50, 100, 150, 200, 300, 400, 520],
+  "PM2.5": [0, 15, 35, 70, 140, 250, 350, 500],
+  PM10: [0, 50, 100, 150, 350, 430, 510, 600],
+  NO2: [0, 40, 80, 180, 280, 400, 800, 1000],
+  SO2: [0, 40, 80, 120, 380, 800, 1600, 2000],
+  CO: [0, 1, 2, 5, 10, 17, 34, 50],
+  O3: [0, 50, 100, 130, 168, 208, 748, 1000],
+  NO: [0, 20, 40, 80, 160, 280, 400, 600],
+  NOX: [0, 40, 80, 160, 280, 400, 600, 800],
+};
+const UNIT = { AQI: "", "PM2.5": "µg/m³", PM10: "µg/m³", NO2: "µg/m³", SO2: "µg/m³", CO: "mg/m³", O3: "µg/m³", NO: "µg/m³", NOX: "µg/m³" };
+const REF = { "PM2.5": 35, PM10: 150, NO2: 80, SO2: 120, CO: 5, O3: 130, NO: 40, NOX: 80 };
+const LABELS = [
+  ["Pakistan", 69.2, 30.2],
+  ["India", 76.4, 27.2],
+  ["Afghanistan", 65.4, 33.9],
+  ["Iran", 60.6, 29.0],
+  ["China", 77.6, 38.1],
+];
+
+const canvas = document.getElementById("map");
+const ctx = canvas.getContext("2d");
+const tip = document.getElementById("tip");
+
+const cam = { x: WORLD_W / 2, y: WORLD_H / 2, k: 1 };
+let camTo = null;
+let hourF = A.hours.length - 1;
+let playing = false;
+let pol = "AQI";
+let prevPol = "AQI";
+let tint = 1;
+let place = { kind: "district", id: "Lahore" };
+let placeBefore = { kind: "district", id: "Lahore" };
+let detailsOpen = false;
+
+const layers = { stations: true, air: true, wind: true, fires: true, border: true, airports: false, corridors: true };
+const FIRE_HOLD = 18;
+let drag = null;
+let hover = null;
+let labelHits = [];
+
+function world(lon, lat) {
+  return [(lon - F.lo0) * KX, (F.la1 - lat)];
+}
+function lonLat(x, y) {
+  return [x / KX + F.lo0, F.la1 - y];
+}
+function cssSize() {
+  return [canvas.clientWidth, canvas.clientHeight];
+}
+function screenOf(lon, lat) {
+  const [x, y] = world(lon, lat);
+  const [w, h] = cssSize();
+  return [(x - cam.x) * cam.k + w / 2, (y - cam.y) * cam.k + h / 2];
+}
+function worldOfEvent(ev) {
+  const r = canvas.getBoundingClientRect();
+  const [w, h] = cssSize();
+  const sx = ev.clientX - r.left;
+  const sy = ev.clientY - r.top;
+  return [cam.x + (sx - w / 2) / cam.k, cam.y + (sy - h / 2) / cam.k];
+}
+
+const landRings = [];
+const countryPaths = A.countries.map((c) => {
+  const path = new Path2D();
+  for (const ring of c.rings) {
+    const projected = ring.map(([lon, lat]) => world(lon, lat));
+    projected.forEach((p, i) => (i ? path.lineTo(p[0], p[1]) : path.moveTo(p[0], p[1])));
+    path.closePath();
+    landRings.push(ring);
+  }
+  return { name: c.name, path };
+});
+const landPath = new Path2D();
+for (const country of countryPaths) landPath.addPath(country.path);
+const districtPaths = A.districts.map((d) => {
+  const path = new Path2D();
+  for (const ring of d.rings) {
+    ring.forEach((p, i) => {
+      const w = world(p[0], p[1]);
+      i ? path.lineTo(w[0], w[1]) : path.moveTo(w[0], w[1]);
+    });
+    path.closePath();
+  }
+  return { name: d.name, path };
+});
+let borderPath = null;
+if (A.border.length) {
+  borderPath = new Path2D();
+  A.border.forEach((p, i) => {
+    const w = world(p[0], p[1]);
+    i ? borderPath.lineTo(w[0], w[1]) : borderPath.moveTo(w[0], w[1]);
+  });
+}
+
+function inRing(lon, lat, ring) {
+  let inside = false;
+  for (let i = 0, j = ring.length - 1; i < ring.length; j = i++) {
+    const [xi, yi] = ring[i];
+    const [xj, yj] = ring[j];
+    if ((yi > lat) !== (yj > lat) && lon < ((xj - xi) * (lat - yi)) / (yj - yi || 1e-9) + xi) inside = !inside;
+  }
+  return inside;
+}
+const districtGeo = A.districts.map((d) => {
+  let lo0 = Infinity;
+  let lo1 = -Infinity;
+  let la0 = Infinity;
+  let la1 = -Infinity;
+  for (const ring of d.rings) {
+    for (const p of ring) {
+      if (p[0] < lo0) lo0 = p[0];
+      if (p[0] > lo1) lo1 = p[0];
+      if (p[1] < la0) la0 = p[1];
+      if (p[1] > la1) la1 = p[1];
+    }
+  }
+  return { rings: d.rings, lo0, lo1, la0, la1 };
+});
+function inDistrict(lon, lat) {
+  for (const d of districtGeo) {
+    if (lon < d.lo0 || lon > d.lo1 || lat < d.la0 || lat > d.la1) continue;
+    for (const ring of d.rings) if (inRing(lon, lat, ring)) return true;
+  }
+  return false;
+}
+function onLand(lon, lat) {
+  if (lon < F.lo0 || lon > F.lo1 || lat < F.la0 || lat > F.la1) return false;
+  for (const ring of landRings) if (inRing(lon, lat, ring)) return true;
+  return false;
+}
+
+function mixHex(a, b, t) {
+  const pa = [1, 3, 5].map((i) => parseInt(a.slice(i, i + 2), 16));
+  const pb = [1, 3, 5].map((i) => parseInt(b.slice(i, i + 2), 16));
+  const c = pa.map((v, i) => Math.round(v + (pb[i] - v) * t));
+  return "#" + c.map((v) => v.toString(16).padStart(2, "0")).join("");
+}
+function hexRgb(rgb) {
+  return "#" + rgb.map((n) => n.toString(16).padStart(2, "0")).join("");
+}
+function colorAt(pollutant, value) {
+  if (value == null || !Number.isFinite(value)) return "#808080";
+  if (pollutant === "AQI") {
+    if (value <= 0) return hexRgb(AQI_RGB[0][1]);
+    for (let i = 1; i < AQI_RGB.length; i++) {
+      if (value <= AQI_RGB[i][0]) {
+        const t = (value - AQI_RGB[i - 1][0]) / (AQI_RGB[i][0] - AQI_RGB[i - 1][0]);
+        const a = AQI_RGB[i - 1][1];
+        const b = AQI_RGB[i][1];
+        return hexRgb(a.map((c, k) => Math.round(c + (b[k] - c) * t)));
+      }
+    }
+    return hexRgb(AQI_RGB[AQI_RGB.length - 1][1]);
+  }
+  const bp = BP[pollutant];
+  const ref = REF[pollutant] || 100;
+  const breaks = bp ? [0, ...bp, bp[bp.length - 1] * 1.5] : [0, 0.5, 1, 1.5, 2.5, 4, 6].map((m) => m * ref);
+  let i = 1;
+  while (i < breaks.length - 1 && value > breaks[i]) i++;
+  const t = Math.min(1, Math.max(0, (value - breaks[i - 1]) / (breaks[i] - breaks[i - 1] || 1)));
+  const c0 = TIER_RGB[Math.min(i - 1, TIER_RGB.length - 1)];
+  const c1 = TIER_RGB[Math.min(i, TIER_RGB.length - 1)];
+  return hexRgb(c0.map((c, k) => Math.round(c + (c1[k] - c) * t)));
+}
+// Statutory PEPC bands. The same seven stops as the legend and the station bubbles.
+const BANDS = [[0, 176, 80], [146, 208, 80], [255, 255, 0], [237, 125, 49], [255, 0, 0], [112, 48, 160], [192, 0, 0]];
+function bandIndex(pollutant, value) {
+  if (value == null || !Number.isFinite(value)) return -1;
+  if (pollutant === "AQI") {
+    const caps = [50, 100, 150, 200, 300, 400];
+    const idx = caps.findIndex((cap) => value <= cap);
+    return idx < 0 ? 6 : idx;
+  }
+  if (BP[pollutant]) {
+    const idx = BP[pollutant].findIndex((cap) => value <= cap);
+    return idx < 0 ? 6 : idx;
+  }
+  const ref = pollutant === "NOX" ? 100 : (REF[pollutant] || 100);
+  const mult = [0.5, 1, 1.5, 2.5, 4, 6];
+  const idx = mult.findIndex((m) => value <= m * ref);
+  return idx < 0 ? 6 : idx;
+}
+function bandRgb(pollutant, value) {
+  const idx = bandIndex(pollutant, value);
+  return idx < 0 ? null : BANDS[idx];
+}
+function tierColor(pollutant, value) {
+  const rgb = bandRgb(pollutant, value);
+  return rgb ? hexRgb(rgb) : "#64748b";
+}
+function bandName(aqi) {
+  if (aqi == null) return "No reading";
+  for (let i = 1; i < STOPS.length; i++) if (aqi <= STOPS[i]) return NAMES[i - 1];
+  return NAMES[NAMES.length - 1];
+}
+function sentence(aqi) {
+  if (aqi == null) return "This place has no reading in the baseline hour.";
+  if (aqi > 400) return "The hour is hazardous. Stay inside if you can.";
+  if (aqi > 300) return "Very unhealthy air, carried mostly by fine dust.";
+  if (aqi > 200) return "Unhealthy. The plains are holding the smoke.";
+  if (aqi > 150) return "Sensitive groups will feel this hour.";
+  if (aqi > 100) return "Moderate. The air is busier than it should be.";
+  if (aqi > 50) return "Satisfactory, with room before the next band.";
+  return "Good air in this hour.";
+}
+
+function valueOf(item, pollutant, index) {
+  if (!item || !item.series) return null;
+  const series = item.series[pollutant] || item.series.AQI;
+  if (!series) return null;
+  const i = Math.max(0, Math.min(series.length - 1, index));
+  const a = series[Math.floor(i)];
+  const b = series[Math.min(series.length - 1, Math.ceil(i))];
+  if (a == null) return b;
+  if (b == null) return a;
+  return a + (b - a) * (i - Math.floor(i));
+}
+function currentValue(item) {
+  const main = valueOf(item, pol, hourF);
+  if (tint >= 1 || pol === prevPol) return { v: main, c: colorAt(pol, main) };
+  const old = valueOf(item, prevPol, hourF);
+  return { v: main, c: mixHex(colorAt(prevPol, old), colorAt(pol, main), tint) };
+}
+
+const districtByName = Object.fromEntries(A.districts.map((d) => [d.name, d]));
+const stationByName = Object.fromEntries(A.stations.map((s) => [s.name, s]));
+const anchorByName = Object.fromEntries(A.anchors.map((s) => [s.name, s]));
+
+function selected() {
+  if (place.kind === "fire") {
+    const fire = A.fires[Number(place.id)];
+    return fire ? { ...fire, kind: "fire", name: shortRegion(fire.region), id: Number(place.id) } : { ...districtByName.Lahore, kind: "district" };
+  }
+  if (place.kind === "station") return { ...stationByName[place.id], kind: "station" };
+  if (place.kind === "anchor") return { ...anchorByName[place.id], kind: "anchor" };
+  return { ...districtByName[place.id], kind: "district" };
+}
+
+function fitBox(lo0, lo1, la0, la1) {
+  const [w, h] = cssSize();
+  if (w < 20 || h < 20) return { x: WORLD_W / 2, y: WORLD_H / 2, k: 8 };
+  const [x0, ySouth] = world(lo0, la0);
+  const [x1, yNorth] = world(lo1, la1);
+  const padX = w < 860 ? 24 : 48;
+  const padTop = 96;
+  const padBottom = 120;
+  const bw = Math.max(0.01, x1 - x0);
+  const bh = Math.max(0.01, ySouth - yNorth);
+  const availW = Math.max(64, w - padX * 2);
+  const availH = Math.max(64, h - padTop - padBottom);
+  const k = Math.min(availW / bw, availH / bh);
+  return { x: (x0 + x1) / 2, y: (yNorth + ySouth) / 2, k: Number.isFinite(k) && k > 0.2 ? k : 0.2 };
+}
+function clampScale(k) {
+  const lo = Math.max(0.2, minK());
+  const hi = lo * 160;
+  if (!Number.isFinite(k)) return lo;
+  return Math.min(hi, Math.max(lo, k));
+}
+function flyTo(box) {
+  camTo = { ...box, t0: performance.now(), dur: reduced ? 1 : 900, from: { x: cam.x, y: cam.y, k: cam.k } };
+  poke();
+}
+function zoomBy(factor, sx, sy) {
+  const [w, h] = cssSize();
+  const base = camTo && camTo.anchor ? camTo.k : cam.k;
+  const next = clampScale(base * factor);
+  const wx = cam.x + (sx - w / 2) / cam.k;
+  const wy = cam.y + (sy - h / 2) / cam.k;
+  camTo = {
+    x: wx - (sx - w / 2) / next,
+    y: wy - (sy - h / 2) / next,
+    k: next,
+    t0: performance.now(),
+    dur: reduced ? 1 : 420,
+    from: { x: cam.x, y: cam.y, k: cam.k },
+    anchor: { wx, wy, sx, sy },
+  };
+  poke();
+}
+function goNeighborhood() { flyTo(fitBox(F.lo0, F.lo1, F.la0, F.la1)); }
+function goPlains() { flyTo(fitBox(69.2, 78.6, 27.4, 34.4)); }
+function goPoint(lon, lat, k) { flyTo({ x: world(lon, lat)[0], y: world(lon, lat)[1], k }); }
+
+const minK = () => fitBox(F.lo0, F.lo1, F.la0, F.la1).k;
+
+// ECMWF 10 m wind, smoothed so neighboring strokes share one curve,
+// then continued past the Punjab grid so the flow does not stop at the border.
+const WX0 = 58;
+const WY0 = 22.5;
+const WD = 0.5;
+const WNX = 44;
+const WNY = 34;
+const windCache = new Map();
+
+function blurField(src, w, h, passes) {
+  let a = src;
+  let b = new Float32Array(src.length);
+  for (let pass = 0; pass < passes; pass++) {
+    for (let j = 0; j < h; j++) {
+      for (let i = 0; i < w; i++) {
+        let sum = 0;
+        let n = 0;
+        for (let dj = -1; dj <= 1; dj++) {
+          const jj = j + dj;
+          if (jj < 0 || jj >= h) continue;
+          for (let di = -1; di <= 1; di++) {
+            const ii = i + di;
+            if (ii < 0 || ii >= w) continue;
+            const ker = di === 0 && dj === 0 ? 4 : di === 0 || dj === 0 ? 2 : 1;
+            sum += a[jj * w + ii] * ker;
+            n += ker;
+          }
+        }
+        b[j * w + i] = sum / n;
+      }
+    }
+    const swap = a;
+    a = b;
+    b = swap;
+  }
+  return a;
+}
+
+function buildWind(hour) {
+  const wg = window.WIND;
+  const u = new Float32Array(WNX * WNY);
+  const v = new Float32Array(WNX * WNY);
+  const known = new Uint8Array(WNX * WNY);
+  if (!wg) return { u, v };
+  const h = Math.max(0, Math.min(wg.nh - 1, hour));
+  const coreU = new Float32Array(wg.nx * wg.ny);
+  const coreV = new Float32Array(wg.nx * wg.ny);
+  const base = h * wg.nx * wg.ny;
+  for (let i = 0; i < coreU.length; i++) {
+    coreU[i] = wg.u[base + i];
+    coreV[i] = wg.v[base + i];
+  }
+  const smoothU = blurField(coreU, wg.nx, wg.ny, 2);
+  const smoothV = blurField(coreV, wg.nx, wg.ny, 2);
+  const ox = Math.round((wg.lo0 - WX0) / WD);
+  const oy = Math.round((wg.la0 - WY0) / WD);
+  for (let j = 0; j < wg.ny; j++) {
+    for (let i = 0; i < wg.nx; i++) {
+      const id = (oy + j) * WNX + (ox + i);
+      u[id] = smoothU[j * wg.nx + i];
+      v[id] = smoothV[j * wg.nx + i];
+      known[id] = 1;
+    }
+  }
+  for (let pass = 0; pass < 90; pass++) {
+    const nu = u.slice();
+    const nv = v.slice();
+    const nk = known.slice();
+    for (let j = 0; j < WNY; j++) {
+      for (let i = 0; i < WNX; i++) {
+        const id = j * WNX + i;
+        if (known[id]) continue;
+        let su = 0;
+        let sv = 0;
+        let n = 0;
+        for (let dj = -1; dj <= 1; dj++) {
+          const jj = j + dj;
+          if (jj < 0 || jj >= WNY) continue;
+          for (let di = -1; di <= 1; di++) {
+            if (!di && !dj) continue;
+            const ii = i + di;
+            if (ii < 0 || ii >= WNX) continue;
+            const nid = jj * WNX + ii;
+            if (!known[nid]) continue;
+            su += u[nid];
+            sv += v[nid];
+            n++;
+          }
+        }
+        if (!n) continue;
+        nu[id] = su / n;
+        nv[id] = sv / n;
+        nk[id] = 1;
+      }
+    }
+    u.set(nu);
+    v.set(nv);
+    known.set(nk);
+  }
+  const softU = blurField(u, WNX, WNY, 1);
+  const softV = blurField(v, WNX, WNY, 1);
+  for (let j = 0; j < wg.ny; j++) {
+    for (let i = 0; i < wg.nx; i++) {
+      const id = (oy + j) * WNX + (ox + i);
+      const c = j * wg.nx + i;
+      softU[id] = softU[id] * 0.35 + smoothU[c] * 0.65;
+      softV[id] = softV[id] * 0.35 + smoothV[c] * 0.65;
+    }
+  }
+  return { u: softU, v: softV };
+}
+
+function windFields(hour) {
+  const h = Math.max(0, Math.min((window.WIND ? window.WIND.nh : 1) - 1, hour));
+  let hit = windCache.get(h);
+  if (!hit) {
+    hit = buildWind(h);
+    windCache.set(h, hit);
+  }
+  return hit;
+}
+
+function sampleWind(field, lon, lat) {
+  const x = (lon - WX0) / WD;
+  const y = (lat - WY0) / WD;
+  const x0 = Math.max(0, Math.min(WNX - 2, Math.floor(x)));
+  const y0 = Math.max(0, Math.min(WNY - 2, Math.floor(y)));
+  const tx = Math.max(0, Math.min(1, x - x0));
+  const ty = Math.max(0, Math.min(1, y - y0));
+  const i00 = y0 * WNX + x0;
+  const a = field[i00] * (1 - tx) + field[i00 + 1] * tx;
+  const b = field[i00 + WNX] * (1 - tx) + field[i00 + WNX + 1] * tx;
+  return a * (1 - ty) + b * ty;
+}
+
+function flow(lon, lat) {
+  if (!window.WIND) return [0.6, 0.2];
+  const when = window.corridorHour == null ? hourF : window.corridorHour;
+  const h0 = Math.max(0, Math.min(window.WIND.nh - 1, Math.floor(when)));
+  const h1 = Math.min(window.WIND.nh - 1, h0 + 1);
+  const a = windFields(h0);
+  const u0 = sampleWind(a.u, lon, lat);
+  const v0 = sampleWind(a.v, lon, lat);
+  const t = when - Math.floor(when);
+  if (h0 === h1 || t < 0.02) return [u0, v0];
+  const b = windFields(h1);
+  return [
+    u0 + (sampleWind(b.u, lon, lat) - u0) * t,
+    v0 + (sampleWind(b.v, lon, lat) - v0) * t,
+  ];
+}
+
+function born(lon, lat, life) {
+  const p = { lon, lat, life, span: life, trail: [] };
+  layTrail(p);
+  return p;
+}
+function spawnParticle() {
+  for (let n = 0; n < 16; n++) {
+    const lon = F.lo0 + Math.random() * (F.lo1 - F.lo0);
+    const lat = F.la0 + Math.random() * (F.la1 - F.la0);
+    if (onLand(lon, lat)) return born(lon, lat, 160 + Math.random() * 220);
+  }
+  return born(74.3, 31.5, 200);
+}
+const particles = [];
+let windT = 0;
+
+function ensureParticles() {
+  const [w, h] = cssSize();
+  const want = w < 40 ? 0 : Math.max(220, Math.min(860, Math.round((w * h) / (40 * 40))));
+  while (particles.length < want) particles.push(spawnOnScreen());
+  if (particles.length > want) particles.length = want;
+}
+
+function layTrail(p) {
+  const trail = [];
+  let lon = p.lon;
+  let lat = p.lat;
+  for (let i = 0; i < 16; i++) {
+    const [u, v] = flow(lon, lat);
+    const [x, y] = screenOf(lon, lat);
+    const [x2, y2] = screenOf(lon + u, lat + v);
+    const dx = x2 - x;
+    const dy = y2 - y;
+    const dist = Math.hypot(dx, dy) || 1;
+    const back = screenToLonLat(x - (dx / dist) * 2.2, y - (dy / dist) * 2.2);
+    lon = back[0];
+    lat = back[1];
+    trail.push([lon, lat]);
+  }
+  p.trail = trail;
+}
+
+function resize() {
+  const dpr = Math.min(2, devicePixelRatio || 1);
+  canvas.width = Math.round(canvas.clientWidth * dpr);
+  canvas.height = Math.round(canvas.clientHeight * dpr);
+  ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+  if (!camTo && cam.k === 1) goNeighborhood();
+  poke();
+}
+
+function draw() {
+  cam.k = clampScale(cam.k);
+  const [w, h] = cssSize();
+  const sea = ctx.createLinearGradient(0, 0, 0, h);
+  sea.addColorStop(0, "#d5e4ea");
+  sea.addColorStop(1, "#b7cdd6");
+  ctx.setTransform(canvas.width / w, 0, 0, canvas.height / h, 0, 0);
+  ctx.fillStyle = sea;
+  ctx.fillRect(0, 0, w, h);
+
+  ctx.setTransform(canvas.width / w, 0, 0, canvas.height / h, 0, 0);
+  ctx.translate(w / 2, h / 2);
+  ctx.scale(cam.k, cam.k);
+  ctx.translate(-cam.x, -cam.y);
+
+  for (const country of countryPaths) {
+    ctx.fillStyle = FILL[country.name] || "#e6dccb";
+    ctx.fill(country.path);
+  }
+  if (!layers.air) {
+    ctx.lineWidth = 1.1 / cam.k;
+    ctx.strokeStyle = "rgba(70, 52, 32, 0.28)";
+    for (const country of countryPaths) ctx.stroke(country.path);
+    if (layers.border && borderPath) {
+      ctx.lineWidth = 1.4 / cam.k;
+      ctx.strokeStyle = "rgba(140, 42, 32, 0.75)";
+      ctx.stroke(borderPath);
+    }
+  }
+
+  ctx.setTransform(canvas.width / w, 0, 0, canvas.height / h, 0, 0);
+
+  if (layers.air) {
+    drawAir(w, h);
+    drawCountryEdges();
+  }
+  if (cam.k > minK() * 1.8) drawDistrictLines();
+  if (layers.airports) drawAirports();
+  if (layers.wind) drawWind();
+  if (layers.corridors && window.Corridor) Corridor.draw(ctx, screenOf, Math.max(0, Math.min(A.hours.length - 1, Math.round(hourF))));
+  drawLabels();
+  if (layers.stations) drawPlaces();
+  if (layers.fires) drawFires();
+}
+
+function drawCountryEdges() {
+  const [w, h] = cssSize();
+  ctx.save();
+  ctx.setTransform(canvas.width / w, 0, 0, canvas.height / h, 0, 0);
+  ctx.translate(w / 2, h / 2);
+  ctx.scale(cam.k, cam.k);
+  ctx.translate(-cam.x, -cam.y);
+  ctx.lineJoin = "round";
+  ctx.lineCap = "round";
+  ctx.lineWidth = 0.85 / cam.k;
+  ctx.strokeStyle = "rgba(255, 252, 248, 0.42)";
+  for (const country of countryPaths) ctx.stroke(country.path);
+  if (layers.border && borderPath) {
+    ctx.lineWidth = 1.05 / cam.k;
+    ctx.strokeStyle = "rgba(255, 236, 230, 0.55)";
+    ctx.stroke(borderPath);
+  }
+  ctx.restore();
+}
+
+function drawDistrictLines() {
+  const [w, h] = cssSize();
+  const selected = place.kind === "district"
+    ? place.id
+    : place.kind === "station"
+      ? stationByName[place.id]?.district
+      : null;
+  ctx.save();
+  ctx.setTransform(canvas.width / w, 0, 0, canvas.height / h, 0, 0);
+  ctx.translate(w / 2, h / 2);
+  ctx.scale(cam.k, cam.k);
+  ctx.translate(-cam.x, -cam.y);
+  ctx.lineJoin = "round";
+  ctx.lineCap = "round";
+  for (const d of districtPaths) {
+    const on = d.name === selected;
+    ctx.lineWidth = (on ? 1.15 : 0.65) / cam.k;
+    ctx.strokeStyle = on ? "rgba(255, 252, 248, 0.82)" : "rgba(255, 252, 248, 0.34)";
+    ctx.stroke(d.path);
+  }
+  ctx.restore();
+}
+
+const fieldCanvas = document.createElement("canvas");
+const fieldCtx = fieldCanvas.getContext("2d", { willReadFrequently: true });
+let fieldKey = "";
+
+function rampStops(pollutant) {
+  if (pollutant === "AQI") return [0, 50, 100, 150, 200, 300, 400];
+  if (BP[pollutant]) return [0, ...BP[pollutant]];
+  const ref = pollutant === "NOX" ? 100 : (REF[pollutant] || 100);
+  return [0, 0.5, 1, 1.5, 2.5, 4, 6].map((m) => m * ref);
+}
+function rampT(pollutant, value) {
+  const stops = rampStops(pollutant);
+  if (value <= stops[0]) return 0;
+  for (let i = 1; i < stops.length; i++) {
+    if (value <= stops[i]) {
+      const span = stops[i] - stops[i - 1] || 1;
+      return (i - 1) + (value - stops[i - 1]) / span;
+    }
+  }
+  return stops.length - 1;
+}
+function rgbAtT(t) {
+  const max = BANDS.length - 1;
+  const x = Math.max(0, Math.min(max, t));
+  const i = Math.min(max - 1, Math.floor(x));
+  const u = x >= max ? 1 : x - i;
+  const a = BANDS[i];
+  const b = BANDS[i + 1];
+  return [
+    a[0] + (b[0] - a[0]) * u,
+    a[1] + (b[1] - a[1]) * u,
+    a[2] + (b[2] - a[2]) * u,
+  ];
+}
+function airSamples() {
+  const out = [];
+  const push = (item) => {
+    if (!item.series || !item.series[pol]) return;
+    const v = valueOf(item, pol, hourF);
+    if (v == null) return;
+    let t = rampT(pol, v);
+    if (tint < 1 && prevPol !== pol && item.series[prevPol]) {
+      const old = valueOf(item, prevPol, hourF);
+      if (old != null) t = rampT(prevPol, old) + (t - rampT(prevPol, old)) * tint;
+    }
+    out.push({ lon: item.lon, lat: item.lat, t });
+  };
+  for (const s of A.stations) push(s);
+  return out;
+}
+
+// Wider than the camera frame, so the wash still covers the land in the
+// padding around a wide screen. India, Iran, and China run past the frame.
+const FIELD_BOX = { lo0: 44, lo1: 98, la0: 16, la1: 48 };
+
+function paintAirField() {
+  const samples = airSamples();
+  const { lo0, lo1, la0, la1 } = FIELD_BOX;
+  const spanX = (lo1 - lo0) * KX;
+  const spanY = la1 - la0;
+  const cols = 680;
+  const rows = Math.max(80, Math.round(cols * spanY / spanX));
+  if (fieldCanvas.width !== cols || fieldCanvas.height !== rows) {
+    fieldCanvas.width = cols;
+    fieldCanvas.height = rows;
+  }
+  const grid = new Float32Array(cols * rows);
+  const img = fieldCtx.createImageData(cols, rows);
+  const data = img.data;
+  if (!samples.length) {
+    fieldCtx.putImageData(img, 0, 0);
+    return;
+  }
+  // A city with many monitors counts once, so Lahore does not punch a hole in the wash.
+  const crowd = 0.16 * 0.16;
+  for (const s of samples) {
+    let n = 0;
+    for (const o of samples) {
+      const dx = (s.lon - o.lon) * KX;
+      const dy = s.lat - o.lat;
+      if (dx * dx + dy * dy < crowd) n++;
+    }
+    s.w0 = 1 / n;
+  }
+  // Blend the legend index, not the red, green, and blue. A wide kernel keeps
+  // one monitor from painting a sun, and the weight never hits zero, so the
+  // color does not end in a seam.
+  const eps2 = 1.55 * 1.55;
+  const power = 1.28;
+  for (let j = 0; j < rows; j++) {
+    const lat = la1 - ((j + 0.5) / rows) * (la1 - la0);
+    for (let i = 0; i < cols; i++) {
+      const lon = lo0 + ((i + 0.5) / cols) * (lo1 - lo0);
+      let tw = 0;
+      let wsum = 0;
+      for (const s of samples) {
+        const dx = (lon - s.lon) * KX;
+        const dy = lat - s.lat;
+        const d2 = dx * dx + dy * dy;
+        const weight = s.w0 / (d2 + eps2) ** power;
+        tw += s.t * weight;
+        wsum += weight;
+      }
+      grid[j * cols + i] = tw / wsum;
+    }
+  }
+  const tmp = new Float32Array(grid.length);
+  const rad = 2;
+  for (let j = 0; j < rows; j++) {
+    for (let i = 0; i < cols; i++) {
+      let tw = 0;
+      let w = 0;
+      const j0 = Math.max(0, j - rad);
+      const j1 = Math.min(rows - 1, j + rad);
+      const i0 = Math.max(0, i - rad);
+      const i1 = Math.min(cols - 1, i + rad);
+      for (let jj = j0; jj <= j1; jj++) {
+        const ky = rad - Math.abs(jj - j) + 1;
+        for (let ii = i0; ii <= i1; ii++) {
+          const ker = ky * (rad - Math.abs(ii - i) + 1);
+          tw += grid[jj * cols + ii] * ker;
+          w += ker;
+        }
+      }
+      tmp[j * cols + i] = tw / w;
+    }
+  }
+  for (let n = 0; n < tmp.length; n++) {
+    const rgb = rgbAtT(tmp[n]);
+    const o = n * 4;
+    data[o] = rgb[0];
+    data[o + 1] = rgb[1];
+    data[o + 2] = rgb[2];
+    data[o + 3] = 255;
+  }
+  fieldCtx.putImageData(img, 0, 0);
+}
+
+function drawAir(w, h) {
+  const key = [Math.round(hourF * 2), pol, Math.round(tint * 8)].join(":");
+  if (key !== fieldKey) {
+    paintAirField();
+    fieldKey = key;
+  }
+  ctx.save();
+  ctx.setTransform(canvas.width / w, 0, 0, canvas.height / h, 0, 0);
+  ctx.translate(w / 2, h / 2);
+  ctx.scale(cam.k, cam.k);
+  ctx.translate(-cam.x, -cam.y);
+  ctx.clip(landPath);
+  ctx.imageSmoothingEnabled = true;
+  ctx.imageSmoothingQuality = "high";
+  const x0 = (FIELD_BOX.lo0 - F.lo0) * KX;
+  const y0 = F.la1 - FIELD_BOX.la1;
+  const x1 = (FIELD_BOX.lo1 - F.lo0) * KX;
+  const y1 = F.la1 - FIELD_BOX.la0;
+  ctx.drawImage(fieldCanvas, x0, y0, x1 - x0, y1 - y0);
+  ctx.restore();
+}
+
+function indicatorCurve(lon, lat) {
+  const pts = [];
+  let [x, y] = screenOf(lon, lat);
+  pts.push([x, y]);
+  let sx = 0;
+  let sy = 0;
+  let primed = false;
+  const step = 1.6;
+  for (let i = 0; i < 16; i++) {
+    const [u, v] = flow(lon, lat);
+    const ahead = screenOf(lon + u, lat + v);
+    let dx = ahead[0] - x;
+    let dy = ahead[1] - y;
+    let dist = Math.hypot(dx, dy);
+    if (dist < 0.2) break;
+    dx /= dist;
+    dy /= dist;
+    if (primed) {
+      dx = dx * 0.72 + sx * 0.28;
+      dy = dy * 0.72 + sy * 0.28;
+      dist = Math.hypot(dx, dy) || 1;
+      dx /= dist;
+      dy /= dist;
+    }
+    sx = dx;
+    sy = dy;
+    primed = true;
+    x -= dx * step;
+    y -= dy * step;
+    const back = screenToLonLat(x, y);
+    lon = back[0];
+    lat = back[1];
+    pts.push([x, y]);
+  }
+  return pts;
+}
+
+function strokeCurve(pts, width, style) {
+  if (pts.length < 2) return;
+  ctx.beginPath();
+  ctx.moveTo(pts[0][0], pts[0][1]);
+  if (pts.length === 2) {
+    ctx.lineTo(pts[1][0], pts[1][1]);
+  } else {
+    for (let i = 1; i < pts.length - 1; i++) {
+      const mx = (pts[i][0] + pts[i + 1][0]) * 0.5;
+      const my = (pts[i][1] + pts[i + 1][1]) * 0.5;
+      ctx.quadraticCurveTo(pts[i][0], pts[i][1], mx, my);
+    }
+    const last = pts[pts.length - 1];
+    ctx.lineTo(last[0], last[1]);
+  }
+  ctx.strokeStyle = style;
+  ctx.lineWidth = width;
+  ctx.stroke();
+}
+
+function gustFade(p) {
+  if (reduced) return 1;
+  const span = p.span || p.life || 1;
+  const age = span - p.life;
+  let t = 1;
+  if (age < 36) t = Math.max(0, age) / 36;
+  if (p.life < 48) t = Math.min(t, Math.max(0, p.life) / 48);
+  return t * t * (3 - 2 * t);
+}
+
+function drawWind() {
+  const [w, h] = cssSize();
+  ctx.save();
+  ctx.lineCap = "round";
+  ctx.lineJoin = "round";
+  for (const p of particles) {
+    const fade = gustFade(p);
+    if (fade < 0.04) continue;
+    const head = screenOf(p.lon, p.lat);
+    if (head[0] < -40 || head[1] < -40 || head[0] > w + 40 || head[1] > h + 40) continue;
+    const pts = indicatorCurve(p.lon, p.lat);
+    if (pts.length < 6) continue;
+    const tail = pts[pts.length - 1];
+    const wash = ctx.createLinearGradient(head[0], head[1], tail[0], tail[1]);
+    wash.addColorStop(0, `rgba(255,255,255,${(0.5 * fade).toFixed(3)})`);
+    wash.addColorStop(0.22, `rgba(255,255,255,${(0.28 * fade).toFixed(3)})`);
+    wash.addColorStop(0.62, `rgba(255,255,255,${(0.1 * fade).toFixed(3)})`);
+    wash.addColorStop(1, "rgba(255,255,255,0)");
+    strokeCurve(pts, 1.05, wash);
+  }
+  ctx.restore();
+}
+
+function firesNow() {
+  return A.fires.filter((f) => f.h <= hourF && hourF - f.h <= FIRE_HOLD);
+}
+const FLAME_OUTER = "M12 1.2C14.2 4.6 16.8 6.4 17.8 8.8C19.2 11.2 19.2 12.4 18.6 14.2C17.8 17.4 15.2 19.4 12 19.4C8.8 19.4 6.2 17.4 5.4 14.2C4.8 12.4 4.8 11.2 6.2 8.8C7.2 6.4 9.8 4.6 12 1.2Z";
+const FLAME_INNER = "M12 9.2C13.7 11.2 15.4 12.4 15.4 14.5C15.4 16.6 13.8 17.8 12 17.8C10.2 17.8 8.6 16.6 8.6 14.5C8.6 12.4 10.3 11.2 12 9.2Z";
+const flameOuter = new Path2D(FLAME_OUTER);
+const flameInner = new Path2D(FLAME_INNER);
+function paintFlame(x, y, px, color, inner) {
+  ctx.save();
+  const s = px / 24;
+  ctx.translate(x, y + px * 0.06);
+  ctx.scale(s, s);
+  ctx.translate(-12, -10.4);
+  ctx.fillStyle = color;
+  ctx.fill(flameOuter);
+  ctx.fillStyle = inner;
+  ctx.fill(flameInner);
+  ctx.restore();
+}
+function drawFires() {
+  const list = firesNow();
+  const selected = place.kind === "fire" ? A.fires[Number(place.id)] : null;
+  const ordered = selected && list.includes(selected)
+    ? list.filter((f) => f !== selected).concat(selected)
+    : list;
+  for (const f of ordered) {
+    const [x, y] = screenOf(f.lon, f.lat);
+    if (x < -48 || y < -48 || x > canvas.clientWidth + 48 || y > canvas.clientHeight + 48) continue;
+    const on = f === selected;
+    const r = on ? 15 : 13;
+    const halo = r * 1.85;
+    const glow = ctx.createRadialGradient(x, y, r * 0.92, x, y, halo);
+    glow.addColorStop(0, "rgba(255, 45, 40, 0.55)");
+    glow.addColorStop(0.5, "rgba(255, 64, 48, 0.18)");
+    glow.addColorStop(1, "rgba(255, 50, 40, 0)");
+    ctx.fillStyle = glow;
+    ctx.beginPath();
+    ctx.arc(x, y, halo, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.beginPath();
+    ctx.fillStyle = "#ffffff";
+    ctx.arc(x, y, r, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.lineWidth = 1;
+    ctx.strokeStyle = "rgba(255, 255, 255, 0.9)";
+    ctx.stroke();
+    paintFlame(x, y, r * 1.72, "#ff2d2d", "#ffffff");
+  }
+}
+
+function drawAirports() {
+  const i = Math.round(hourF);
+  ctx.save();
+  ctx.font = "500 12px Outfit, Segoe UI, sans-serif";
+  ctx.fillStyle = "#241c16";
+  for (const a of A.airports) {
+    const [x, y] = screenOf(a.lon, a.lat);
+    const u = a.u[i] || 0;
+    const v = a.v[i] || 0;
+    ctx.beginPath();
+    ctx.arc(x, y, 3, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.beginPath();
+    ctx.moveTo(x, y);
+    ctx.lineTo(x + u * 10, y - v * 10);
+    ctx.strokeStyle = "#241c16";
+    ctx.stroke();
+    if (cam.k > minK() * 2) ctx.fillText(a.id, x + 6, y - 6);
+  }
+  ctx.restore();
+}
+
+function drawLabels() {
+  if (cam.k > minK() * 2.6) return;
+  ctx.save();
+  ctx.font = "500 15px Outfit, Segoe UI, sans-serif";
+  ctx.fillStyle = "rgba(36, 28, 22, 0.62)";
+  ctx.textAlign = "center";
+  for (const [name, lon, lat] of LABELS) {
+    const [x, y] = screenOf(lon, lat);
+    if (x < 40 || y < 40 || x > canvas.clientWidth - 40 || y > canvas.clientHeight - 40) continue;
+    ctx.fillText(name, x, y);
+  }
+  ctx.restore();
+}
+
+function markInk(fill) {
+  const n = parseInt(fill.slice(1), 16);
+  const r = (n >> 16) & 255;
+  const g = (n >> 8) & 255;
+  const b = n & 255;
+  return (r * 299 + g * 587 + b * 114) / 1000 > 165 ? "#241c16" : "#ffffff";
+}
+function stationValueText(value) {
+  if (value == null || !Number.isFinite(value)) return "–";
+  if (pol === "CO") return Number(value).toFixed(1);
+  return String(Math.round(value));
+}
+function drawStationMark(x, y, selected, fill, text) {
+  const r = stationRadius(selected);
+  const glow = ctx.createRadialGradient(x, y, r * 0.45, x, y, r * 1.9);
+  glow.addColorStop(0, fill + "88");
+  glow.addColorStop(0.55, fill + "33");
+  glow.addColorStop(1, fill + "00");
+  ctx.fillStyle = glow;
+  ctx.beginPath();
+  ctx.arc(x, y, r * 1.9, 0, Math.PI * 2);
+  ctx.fill();
+  ctx.beginPath();
+  ctx.fillStyle = fill;
+  ctx.arc(x, y, r, 0, Math.PI * 2);
+  ctx.fill();
+  ctx.lineWidth = selected ? 2 : 1;
+  ctx.strokeStyle = "rgba(255, 255, 255, 0.9)";
+  ctx.stroke();
+  ctx.fillStyle = markInk(fill);
+  ctx.font = `600 ${text.length > 3 ? 10 : 12}px Outfit, Segoe UI, sans-serif`;
+  ctx.textAlign = "center";
+  ctx.textBaseline = "middle";
+  ctx.fillText(text, x, y + 0.5);
+}
+function stationRadius(selected) {
+  return selected ? 18 : 15;
+}
+function stationLayout() {
+  const marks = [];
+  const [cw, ch] = cssSize();
+  for (const s of A.stations) {
+    const [x, y] = screenOf(s.lon, s.lat);
+    if (x < -80 || y < -80 || x > cw + 80 || y > ch + 80) continue;
+    const value = valueOf(s, pol, hourF);
+    marks.push({
+      s, x, y, hx: x, hy: y,
+      selected: place.kind === "station" && place.id === s.name,
+      fill: tierColor(pol, value),
+      text: stationValueText(value),
+    });
+  }
+  const gap = 6;
+  for (let pass = 0; pass < 14; pass++) {
+    let moved = false;
+    for (let i = 0; i < marks.length; i++) {
+      for (let j = i + 1; j < marks.length; j++) {
+        const a = marks[i];
+        const b = marks[j];
+        let dx = b.x - a.x;
+        let dy = b.y - a.y;
+        let dist = Math.hypot(dx, dy);
+        if (dist < 0.01) { dx = (i - j) || 1; dy = 0.4; dist = Math.hypot(dx, dy); }
+        const need = stationRadius(a.selected) + stationRadius(b.selected) + gap;
+        if (dist >= need) continue;
+        const ux = dx / dist;
+        const uy = dy / dist;
+        const moveA = !a.selected;
+        const moveB = !b.selected;
+        const parts = (moveA ? 1 : 0) + (moveB ? 1 : 0) || 1;
+        const delta = (need - dist) / parts;
+        if (moveA) { a.x -= ux * delta; a.y -= uy * delta; }
+        if (moveB) { b.x += ux * delta; b.y += uy * delta; }
+        moved = true;
+      }
+    }
+    if (!moved) break;
+  }
+  const maxDrift = 72;
+  for (const m of marks) {
+    const dx = m.x - m.hx;
+    const dy = m.y - m.hy;
+    const dist = Math.hypot(dx, dy);
+    if (dist > maxDrift) {
+      m.x = m.hx + (dx / dist) * maxDrift;
+      m.y = m.hy + (dy / dist) * maxDrift;
+    }
+  }
+  return marks;
+}
+function drawPlaces() {
+  const marks = stationLayout();
+  marks.sort((a, b) => Number(a.selected) - Number(b.selected));
+  for (const mark of marks) drawStationMark(mark.x, mark.y, mark.selected, mark.fill, mark.text);
+  if (cam.k > minK() * 2.2) drawDistrictLabels(marks);
+}
+
+let labelPlan = null;
+
+function screenToLonLat(sx, sy) {
+  const [w, h] = cssSize();
+  return lonLat(cam.x + (sx - w / 2) / cam.k, cam.y + (sy - h / 2) / cam.k);
+}
+
+function districtContainsScreen(district, sx, sy) {
+  const [lon, lat] = screenToLonLat(sx, sy);
+  for (const ring of district.rings) if (inRing(lon, lat, ring)) return true;
+  return false;
+}
+
+function textFitsDistrict(district, cand) {
+  const midX = cand.x + cand.w / 2;
+  const midY = cand.y + cand.h / 2;
+  const pts = [
+    [midX, midY],
+    [cand.x + 1, midY],
+    [cand.x + cand.w - 1, midY],
+    [midX, cand.y + 1],
+    [midX, cand.y + cand.h - 1],
+  ];
+  for (const [x, y] of pts) if (!districtContainsScreen(district, x, y)) return false;
+  return true;
+}
+
+function discClearance(cand, marks) {
+  let clear = 999;
+  for (const mark of marks) {
+    const nx = Math.max(cand.x, Math.min(mark.x, cand.x + cand.w));
+    const ny = Math.max(cand.y, Math.min(mark.y, cand.y + cand.h));
+    clear = Math.min(clear, Math.hypot(mark.x - nx, mark.y - ny) - stationRadius(mark.selected));
+  }
+  return clear;
+}
+
+function boxesHit(a, b) {
+  return a.x < b.x + b.w && a.x + a.w > b.x && a.y < b.y + b.h && a.y + a.h > b.y;
+}
+
+function planDistrictLabels(marks) {
+  const [vw, vh] = cssSize();
+  const zoomKey = `${Math.round(Math.log(cam.k) * 12)}:${vw}x${vh}`;
+  const fireKey = layers.fires ? Math.round(hourF) : -1;
+  if (labelPlan && labelPlan.zoomKey === zoomKey && labelPlan.fireKey === fireKey) return labelPlan.anchors;
+  const seen = new Set(marks.map((m) => m.s.name));
+  const all = marks.slice();
+  for (const s of A.stations) {
+    if (seen.has(s.name)) continue;
+    const [x, y] = screenOf(s.lon, s.lat);
+    all.push({ x, y, selected: false });
+  }
+  const fires = layers.fires ? firesNow().map((f) => screenOf(f.lon, f.lat)) : [];
+  const anchors = [];
+  const font = "600 12px Outfit, Segoe UI, sans-serif";
+  ctx.save();
+  ctx.font = font;
+  for (const d of A.districts) {
+    const [cx, cy] = screenOf(d.lon, d.lat);
+    const tw = Math.ceil(ctx.measureText(d.name).width);
+    const th = 14;
+    let minX = Infinity;
+    let maxX = -Infinity;
+    let minY = Infinity;
+    let maxY = -Infinity;
+    for (const ring of d.rings) {
+      for (const p of ring) {
+        const [x, y] = screenOf(p[0], p[1]);
+        if (x < minX) minX = x;
+        if (x > maxX) maxX = x;
+        if (y < minY) minY = y;
+        if (y > maxY) maxY = y;
+      }
+    }
+    let best = null;
+    const x0 = Math.max(minX + tw / 2, cx - 130);
+    const x1 = Math.min(maxX - tw / 2, cx + 130);
+    const y0 = Math.max(minY + th / 2, cy - 130);
+    const y1 = Math.min(maxY - th / 2, cy + 130);
+    for (let y = y0; y <= y1; y += 8) {
+      for (let x = x0; x <= x1; x += 8) {
+        const cand = { x: x - tw / 2, y: y - th / 2, w: tw, h: th };
+        if (!textFitsDistrict(d, cand)) continue;
+        if (discClearance(cand, all) < 4) continue;
+        let onFire = false;
+        for (const [fx, fy] of fires) {
+          const nx = Math.max(cand.x, Math.min(fx, cand.x + cand.w));
+          const ny = Math.max(cand.y, Math.min(fy, cand.y + cand.h));
+          if (Math.hypot(fx - nx, fy - ny) < 16) { onFire = true; break; }
+        }
+        if (onFire) continue;
+        const score = Math.min(discClearance(cand, all), 20) - Math.hypot(x - cx, y - cy) * 0.22;
+        if (!best || score > best.score) best = { x, y, score };
+      }
+    }
+    if (!best) continue;
+    const [lon, lat] = screenToLonLat(best.x, best.y);
+    anchors.push({ name: d.name, lon, lat });
+  }
+  ctx.restore();
+  labelPlan = { zoomKey, fireKey, anchors };
+  return anchors;
+}
+
+function drawDistrictLabels(marks) {
+  const anchors = planDistrictLabels(marks);
+  labelHits = [];
+  const [cw, ch] = cssSize();
+  ctx.save();
+  ctx.font = "600 12px Outfit, Segoe UI, sans-serif";
+  ctx.textAlign = "center";
+  ctx.textBaseline = "middle";
+  for (const anchor of anchors) {
+    const [x, y] = screenOf(anchor.lon, anchor.lat);
+    const w = ctx.measureText(anchor.name).width;
+    const h = 14;
+    if (x + w / 2 < 0 || y + h / 2 < 0 || x - w / 2 > cw || y - h / 2 > ch) continue;
+    labelHits.push({ name: anchor.name, x: x - w / 2, y: y - h / 2, w, h });
+    const selected = place.kind === "district" && place.id === anchor.name;
+    ctx.lineWidth = 3;
+    ctx.strokeStyle = "rgba(255, 250, 244, 0.94)";
+    ctx.strokeText(anchor.name, x, y);
+    ctx.fillStyle = selected ? "#17221f" : "rgba(36, 28, 22, 0.78)";
+    ctx.fillText(anchor.name, x, y);
+  }
+  ctx.restore();
+}
+
+function hitFire(sx, sy) {
+  if (!layers.fires) return null;
+  let best = null;
+  let bestD = 22;
+  for (const f of firesNow()) {
+    const [x, y] = screenOf(f.lon, f.lat);
+    const d = Math.hypot(x - sx, y - sy);
+    if (d < bestD) {
+      bestD = d;
+      best = f;
+    }
+  }
+  return best;
+}
+function hitTest(sx, sy) {
+  if (!layers.stations) return null;
+  let best = null;
+  let bestD = 20;
+  for (const mark of stationLayout()) {
+    const d = Math.hypot(mark.x - sx, mark.y - sy);
+    if (d < bestD) {
+      bestD = d;
+      best = { ...mark.s, kind: "station" };
+    }
+  }
+  if (best || cam.k <= minK() * 2.2) return best;
+  for (const box of labelHits) {
+    if (sx >= box.x && sx <= box.x + box.w && sy >= box.y && sy <= box.y + box.h) {
+      const d = districtByName[box.name];
+      if (d) return { ...d, kind: "district" };
+    }
+  }
+  return null;
+}
+
+function onScreen(lon, lat, margin) {
+  const [x, y] = screenOf(lon, lat);
+  const [w, h] = cssSize();
+  return x > -margin && y > -margin && x < w + margin && y < h + margin;
+}
+function spawnOnScreen() {
+  const [w, h] = cssSize();
+  for (let n = 0; n < 24; n++) {
+    const sx = Math.random() * w;
+    const sy = Math.random() * h;
+    const [lon, lat] = lonLat(cam.x + (sx - w / 2) / cam.k, cam.y + (sy - h / 2) / cam.k);
+    if (onLand(lon, lat)) return born(lon, lat, 150 + Math.random() * 210);
+  }
+  return spawnParticle();
+}
+let trailK = 0;
+function stepParticles() {
+  ensureParticles();
+  if (reduced) {
+    const dirty = Math.abs(trailK - cam.k) > cam.k * 0.08;
+    if (dirty) trailK = cam.k;
+    for (const p of particles) {
+      if (dirty || !p.trail || p.trail.length < 8) layTrail(p);
+    }
+    return;
+  }
+  windT += 0.008;
+  for (const p of particles) {
+    const [u, v] = flow(p.lon, p.lat);
+    const mag = Math.hypot(u, v);
+    p.trail.push([p.lon, p.lat]);
+    if (p.trail.length > 24) p.trail.shift();
+    if (mag > 0.04) {
+      const [x, y] = screenOf(p.lon, p.lat);
+      const [x2, y2] = screenOf(p.lon + u, p.lat + v);
+      const dx = x2 - x;
+      const dy = y2 - y;
+      const dist = Math.hypot(dx, dy) || 1;
+      const px = 0.34 + Math.min(mag, 3.2) * 0.1;
+      const [lon, lat] = screenToLonLat(x + (dx / dist) * px, y + (dy / dist) * px);
+      p.lon = lon;
+      p.lat = lat;
+    }
+    p.life -= 1;
+    const leaving = !onLand(p.lon, p.lat) || !onScreen(p.lon, p.lat, 28);
+    if (leaving && p.life > 48) p.life = 48;
+    if (p.life < 0) {
+      const next = spawnOnScreen();
+      p.lon = next.lon;
+      p.lat = next.lat;
+      p.life = next.life;
+      p.span = next.span;
+      p.trail = next.trail;
+    }
+  }
+}
+
+function clampCam() {
+  const [w, h] = cssSize();
+  if (w < 20 || h < 20) return;
+  const halfW = (w / 2) / cam.k;
+  const halfH = (h / 2) / cam.k;
+  cam.x = Math.min(WORLD_W - halfW * 0.25, Math.max(halfW * 0.25, cam.x));
+  cam.y = Math.min(WORLD_H - halfH * 0.25, Math.max(halfH * 0.25, cam.y));
+}
+function stepCamera(now) {
+  if (!camTo) return false;
+  const dur = camTo.dur || (reduced ? 1 : 900);
+  const t = Math.min(1, (now - camTo.t0) / dur);
+  const e = 1 - Math.pow(1 - t, 3);
+  const k = clampScale(camTo.from.k + (camTo.k - camTo.from.k) * e);
+  cam.k = k;
+  if (camTo.anchor) {
+    const [w, h] = cssSize();
+    cam.x = camTo.anchor.wx - (camTo.anchor.sx - w / 2) / k;
+    cam.y = camTo.anchor.wy - (camTo.anchor.sy - h / 2) / k;
+  } else {
+    cam.x = camTo.from.x + (camTo.x - camTo.from.x) * e;
+    cam.y = camTo.from.y + (camTo.y - camTo.from.y) * e;
+  }
+  if (t >= 1) camTo = null;
+  return true;
+}
+
+let running = false;
+function poke() {
+  if (!running) {
+    running = true;
+    requestAnimationFrame(loop);
+  }
+}
+function loop(now) {
+  if (playing) {
+    hourF += 0.12;
+    if (hourF >= A.hours.length - 1) hourF = 0;
+    document.getElementById("hour").value = String(Math.round(hourF));
+    syncFigures();
+  }
+  if (tint < 1) tint = Math.min(1, tint + 0.04);
+  if (layers.wind) stepParticles();
+  const moving = stepCamera(now);
+  clampCam();
+  draw();
+  if (playing || (layers.wind && !reduced) || moving || tint < 1 || camTo) requestAnimationFrame(loop);
+  else running = false;
+}
+
+function fmt(n) {
+  if (n == null || !Number.isFinite(n)) return "—";
+  return Math.round(n).toString();
+}
+function hourText(index) {
+  const raw = A.hours[Math.max(0, Math.min(A.hours.length - 1, Math.round(index)))];
+  return raw.replace(" ", " · ");
+}
+
+function shortRegion(name) {
+  if (!name) return "Fire";
+  if (name.includes("Pakistan")) return "Punjab, Pakistan";
+  if (name.includes("Haryana")) return "Haryana";
+  if (name.includes("India")) return "Punjab, India";
+  return name;
+}
+function flameSvg(px) {
+  return `<svg class="flame-svg" width="${px}" height="${px}" viewBox="0 0 24 24" aria-hidden="true"><path fill="#ff2d2d" d="${FLAME_OUTER}"/><path fill="#fff" d="${FLAME_INNER}"/></svg>`;
+}
+function miniFlame(on) {
+  const fill = on ? "#ff3b30" : "#c8c2bb";
+  const inner = on ? "#fff" : "#f6f3ef";
+  return `<svg class="mini-flame" width="12" height="15" viewBox="0 0 24 24" aria-hidden="true"><path fill="${fill}" d="${FLAME_OUTER}"/><path fill="${inner}" d="${FLAME_INNER}"/></svg>`;
+}
+function intensityOf(frp) {
+  if (frp >= 100) return { label: "High", n: 3 };
+  if (frp >= 50) return { label: "Medium", n: 2 };
+  return { label: "Low", n: 1 };
+}
+function surfaceHa(f) {
+  const scan = f.scan || 0.4;
+  const track = f.track || 0.4;
+  return Math.max(1, Math.round(scan * track * 100));
+}
+function lastDetectedLabel(f) {
+  const age = hourF - f.h;
+  if (age < 0) return "Later this episode";
+  const n = Math.max(1, Math.ceil(age));
+  return n === 1 ? "&lt; 1 hour ago" : `&lt; ${n} hours ago`;
+}
+function backLabel() {
+  if (placeBefore.kind === "station") return stationByName[placeBefore.id]?.name || "Map";
+  return placeBefore.id || "Map";
+}
+function fireAgeText(f) {
+  const age = hourF - f.h;
+  if (age < 0) return "Not yet in this hour";
+  if (age < 0.6) return "This hour";
+  if (age < 1.5) return "1 hour ago";
+  return `${Math.round(age)} hours ago`;
+}
+function fireHeld(f) {
+  return f.h <= hourF && hourF - f.h <= FIRE_HOLD;
+}
+function fireSentence(f) {
+  const pass = f.day === "D" ? "day" : f.day === "N" ? "night" : "the";
+  if (!fireHeld(f)) return "This detection has left the 18-hour window, so the flame is off the map.";
+  if (hourF - f.h <= 6) return `${f.sat || "VIIRS"} caught this on a ${pass} pass ${fireAgeText(f).toLowerCase()}. The flame stays up for 18 hours.`;
+  return `${f.sat || "VIIRS"} caught this on a ${pass} pass ${fireAgeText(f).toLowerCase()}. It remains until the 18-hour hold ends.`;
+}
+function fireDetailRows(f) {
+  const inten = intensityOf(f.frp || 0);
+  const flames = `<span class="flames">${[1, 2, 3].map((i) => miniFlame(i <= inten.n)).join("")}</span>`;
+  const spread = `<svg width="13" height="13" viewBox="0 0 24 24" aria-hidden="true"><path fill="none" stroke="#6d675f" stroke-width="2" d="M4 9V4h5M20 9V4h-5M4 15v5h5M20 15v5h-5"/></svg>`;
+  const cross = `<svg width="13" height="13" viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="3" fill="none" stroke="#6d675f" stroke-width="2"/><path stroke="#6d675f" stroke-width="2" d="M12 3v4M12 17v4M3 12h4M17 12h4"/></svg>`;
+  return `
+    <div class="iq-row"><span>Last Detected</span><span class="pill">${miniFlame(true)} ${lastDetectedLabel(f)}</span></div>
+    <div class="iq-row"><span>Intensity</span><span class="pill">${flames} ${inten.label}</span></div>
+    <div class="iq-row"><span>Surface</span><span class="pill">${spread} ${surfaceHa(f)} ha</span></div>
+    <div class="iq-row"><span>Coordinates</span><span class="pill">${cross} ${f.lat.toFixed(3)}, ${f.lon.toFixed(3)}</span></div>`;
+}
+function coordText(lon, lat) {
+  if (!Number.isFinite(lon) || !Number.isFinite(lat)) return "";
+  const ns = lat >= 0 ? "N" : "S";
+  const ew = lon >= 0 ? "E" : "W";
+  return `${Math.abs(lat).toFixed(3)}°${ns}, ${Math.abs(lon).toFixed(3)}°${ew}`;
+}
+function stationsIn(item) {
+  if (!item || item.kind === "anchor") return [];
+  if (item.kind === "station") return [item];
+  return A.stations.filter((s) => s.district === item.name);
+}
+function reportingCount(item) {
+  return stationsIn(item).filter((s) => valueOf(s, "AQI", hourF) != null).length;
+}
+function reportingText(item) {
+  if (!item || item.kind === "anchor") return "—";
+  if (item.kind === "station") return valueOf(item, "AQI", hourF) == null ? "No reading" : "Reporting";
+  return `${reportingCount(item)} of ${stationsIn(item).length}`;
+}
+function placeKicker(item) {
+  if (item.kind === "station") return item.mobile ? "Mobile AQMS" : "AQMS station";
+  if (item.kind === "anchor") return "Cross-border anchor";
+  return "AQMS network";
+}
+function sourceLabel(src) {
+  if (!src) return "";
+  if (src.indexOf("EMC") === 0) return "EMC confirmed";
+  if (src.indexOf("approximate") === 0) return "Approximate";
+  if (src.indexOf("shapefile") === 0) return "Shapefile";
+  return src;
+}
+function placeWhere(item) {
+  if (item.kind === "station") return `${item.district}, Punjab`;
+  if (item.kind === "anchor") return `${item.place} · not an EPA station`;
+  return "Punjab, Pakistan";
+}
+function stationBadge(item) {
+  const pin = `<svg width="14" height="14" viewBox="0 0 16 16" aria-hidden="true"><path fill="currentColor" d="M8 1.4a4.3 4.3 0 0 0-4.3 4.3C3.7 9.2 8 14.6 8 14.6s4.3-5.4 4.3-8.9A4.3 4.3 0 0 0 8 1.4Zm0 5.7a1.45 1.45 0 1 1 0-2.9 1.45 1.45 0 0 1 0 2.9Z"/></svg>`;
+  return `${pin}${placeKicker(item)}`;
+}
+function stationFacts(item) {
+  if (item.kind === "station") {
+    const src = sourceLabel(item.coordSource);
+    const pos = src ? `${coordText(item.lon, item.lat)} · ${src}` : coordText(item.lon, item.lat);
+    return `
+      <div><dt>Station ID</dt><dd>${item.id || "—"}</dd></div>
+      <div><dt>Network</dt><dd>${item.mobile ? "Mobile" : "Fixed"}</dd></div>
+      <div class="wide"><dt>Coordinates</dt><dd>${pos}</dd></div>`;
+  }
+  if (item.kind === "anchor") {
+    return `
+      <div><dt>Kind</dt><dd>City anchor</dd></div>
+      <div><dt>Network</dt><dd>Not EPA</dd></div>
+      <div class="wide"><dt>Coordinates</dt><dd>${coordText(item.lon, item.lat)}</dd></div>`;
+  }
+  const list = stationsIn(item);
+  const mobile = list.filter((s) => s.mobile).length;
+  return `
+    <div><dt>Stations</dt><dd>${list.length} AQMS</dd></div>
+    <div><dt>Reporting</dt><dd>${reportingCount(item)} this hour</dd></div>
+    <div><dt>Fixed</dt><dd>${list.length - mobile}</dd></div>
+    <div><dt>Mobile</dt><dd>${mobile}</dd></div>`;
+}
+function mainPollutant(item) {
+  const names = ["PM2.5", "PM10", "NO2", "SO2", "CO", "O3"];
+  let best = null;
+  let score = -1;
+  for (const p of names) {
+    const v = valueOf(item, p, hourF);
+    if (v == null) continue;
+    const s = v / (REF[p] || 1);
+    if (s > score) {
+      score = s;
+      best = p;
+    }
+  }
+  return best;
+}
+function polLabel(p) {
+  if (p === "NOX") return "NOx";
+  return p || "—";
+}
+function windPhrase(u, v) {
+  if (u == null || v == null || !Number.isFinite(u) || !Number.isFinite(v)) return "—";
+  const kmh = Math.hypot(u, v) * 3.6;
+  const deg = (Math.atan2(-u, -v) * 180 / Math.PI + 360) % 360;
+  const names = ["N", "NE", "E", "SE", "S", "SW", "W", "NW"];
+  const toward = names[Math.round(deg / 45) % 8];
+  const speed = kmh < 10 ? kmh.toFixed(1) : String(Math.round(kmh));
+  return `${speed} km/h ${toward}`;
+}
+function windAt(item, upper) {
+  const row = item.wind && item.wind[Math.round(hourF)];
+  if (!row) return "—";
+  return windPhrase(upper ? row[2] : row[0], upper ? row[3] : row[1]);
+}
+function nearbyFireCount(item) {
+  if (!Number.isFinite(item.lon) || !Number.isFinite(item.lat)) return 0;
+  return firesNow().filter((f) => {
+    const dx = (f.lon - item.lon) * KX;
+    const dy = f.lat - item.lat;
+    return dx * dx + dy * dy < 0.45 * 0.45;
+  }).length;
+}
+function niceMax(v) {
+  if (v <= 50) return 50;
+  if (v <= 100) return 100;
+  if (v <= 200) return 200;
+  if (v <= 300) return 300;
+  if (v <= 500) return 500;
+  return Math.ceil(v / 100) * 100;
+}
+function mountCard() {
+  const item = selected();
+  if (item.kind === "fire") {
+    document.getElementById("card").innerHTML = `
+      <button type="button" class="back" id="fireBack">← ${backLabel()}</button>
+      <div class="fire-head">${flameSvg(28)}<p class="fire-title">Active fire</p></div>
+      <p class="iq-label">Details</p>
+      <div class="iq-card" id="fireFacts">${fireDetailRows(item)}</div>
+      ${fireHeld(item) ? "" : `<p class="sentence" id="sentence">${fireSentence(item)}</p>`}
+      <p class="iq-label">Data Sources</p>
+      <a class="source-card" href="https://earthdata.nasa.gov/" target="_blank" rel="noopener noreferrer">
+        <span class="nasa-mark">NASA</span>
+        <span><b>NASA</b><small>https://earthdata.nasa.gov/ <svg width="12" height="12" viewBox="0 0 24 24" aria-hidden="true"><path fill="none" stroke="#2f6fad" stroke-width="2" stroke-linecap="round" d="M14 5h5v5M19 5l-8 8M10 5H6a1 1 0 0 0-1 1v12a1 1 0 0 0 1 1h12a1 1 0 0 0 1-1v-4"/></svg></small></span>
+      </a>`;
+    document.getElementById("when").textContent = hourText(hourF);
+    const card = document.getElementById("card");
+    card.scrollTop = 0;
+    return;
+  }
+  const aqi = valueOf(item, "AQI", hourF);
+  const color = aqi == null ? "#808080" : tierColor("AQI", aqi);
+  const ink = markInk(color);
+  const main = mainPollutant(item);
+  const mainV = main ? valueOf(item, main, hourF) : null;
+  const pols = ["AQI", "PM2.5", "PM10", "NO2", "SO2", "CO", "O3", "NO", "NOX"];
+  const meters = item.kind === "anchor" ? `<p class="note">This city is scaled from Lahore. It has no EPA pollutant breakdown.</p>` : pols.filter((p) => p !== "AQI").map((p) => {
+    const v = valueOf(item, p, hourF);
+    const ref = REF[p];
+    const width = v == null ? 0 : Math.min(100, (v / (ref * 3)) * 100);
+    return `<div class="meter"><b>${polLabel(p)}</b><div class="track"><i data-bar="${p}" style="width:${width}%;background:${v == null ? "#d5d0ca" : tierColor(p, v)}"></i></div><span data-val="${p}">${v == null ? "—" : v} ${UNIT[p]}</span></div>`;
+  }).join("");
+  document.getElementById("card").innerHTML = `
+    <div class="place-top">
+      <span class="station-badge">${stationBadge(item)}</span>
+    </div>
+    <h2 class="place">${item.name}</h2>
+    <p class="station-where" id="stationWhere">${placeWhere(item)}</p>
+    <time class="card-when" id="cardWhen">${hourText(hourF)}</time>
+    <dl class="station-facts" id="stationFacts">${stationFacts(item)}</dl>
+    <section class="aqi-card" id="aqiCard" style="background:${color};color:${ink}">
+      <div class="aqi-top">
+        <div>
+          <div class="aqi-num" id="num">${fmt(aqi)}</div>
+          <div class="aqi-unit">AQI</div>
+        </div>
+        <div class="aqi-band" id="band">${bandName(aqi)}</div>
+      </div>
+      <div class="aqi-split">
+        <span>Main pollutant <b id="mainName">${polLabel(main)}</b></span>
+        <b id="mainVal">${mainV == null ? "—" : `${fmt(mainV)} ${UNIT[main] || ""}`.trim()}</b>
+      </div>
+    </section>
+    <p class="sentence" id="sentence">${sentence(aqi)}</p>
+    <div class="pols">${pols.map((p) => `<button type="button" data-pol="${p}" class="${p === pol ? "on" : ""}">${polLabel(p)}</button>`).join("")}</div>
+    <div class="history">
+      <div class="history-head"><b>History</b><span id="histLabel">${polLabel(pol)} · 24 hours</span></div>
+      <div class="history-plot">
+        <div class="history-axis" id="histAxis"></div>
+        <svg id="hist" viewBox="0 0 288 112" role="img" aria-label="History for the last 24 hours"></svg>
+      </div>
+    </div>
+    <div class="iq-card hour-facts">
+      <div class="iq-row"><span>Wind, 10 m</span><span class="pill" id="wind10">${windAt(item, false)}</span></div>
+      <div class="iq-row"><span>Wind, 925 hPa</span><span class="pill" id="wind925">${windAt(item, true)}</span></div>
+      <div class="iq-row"><span>Fires nearby</span><span class="pill" id="firesNear">${nearbyFireCount(item)}</span></div>
+      <div class="iq-row"><span>AQMS reporting</span><span class="pill" id="reporting">${reportingText(item)}</span></div>
+      <div class="iq-row cor-line" id="corInside" hidden><span id="corInsideText"></span></div>
+      <div class="iq-row cor-line" id="corOutside" hidden><span id="corOutsideText"></span></div>
+    </div>
+    <button type="button" class="details-btn" id="seeDetails" aria-expanded="${detailsOpen ? "true" : "false"}">${detailsOpen ? "Hide details" : "See details"}</button>
+    <div id="details"${detailsOpen ? "" : " hidden"}>
+      <div class="meters">${meters}</div>
+      <p class="note">Pollutants are the EPA AQMS hour. Wind is ECMWF at 10 m and 925 hPa. Fires are NASA FIRMS, held 18 hours. This baseline has no surface pressure. Corridors, when Border is on, carry PM2.5 on that wind. Outside Punjab the amount is Copernicus CAMS.</p>
+      <div id="corHops"></div>
+    </div>`;
+  syncFires();
+  drawHistory();
+  syncCorridorCard();
+  document.getElementById("when").textContent = hourText(hourF);
+  document.getElementById("card").scrollTop = 0;
+}
+
+function drawHistory() {
+  const item = selected();
+  const svg = document.getElementById("hist");
+  const axis = document.getElementById("histAxis");
+  const label = document.getElementById("histLabel");
+  if (!svg || !item || !item.series) return;
+  const series = item.series[pol] || item.series.AQI || [];
+  const end = Math.max(0, Math.min(series.length - 1, Math.round(hourF)));
+  const start = Math.max(0, end - 23);
+  const values = series.slice(start, end + 1);
+  if (label) label.textContent = `${polLabel(pol)} · 24 hours`;
+  const peak = Math.max(1, ...values.map((v) => (v == null ? 0 : v)));
+  const max = niceMax(peak);
+  if (axis) axis.innerHTML = `<span>${max}</span><span>${Math.round(max / 2)}</span><span>0</span>`;
+  const n = Math.max(1, values.length);
+  const gap = 3;
+  const width = 288;
+  const base = 104;
+  const bw = (width - gap * (n - 1)) / n;
+  svg.innerHTML = values.map((v, i) => {
+    const val = v == null ? 0 : v;
+    const h = v == null ? 2 : Math.max(2, (val / max) * base);
+    const x = i * (bw + gap);
+    const y = base - h;
+    const fill = v == null ? "#d5d0ca" : tierColor(pol, v);
+    const on = start + i === end;
+    return `<rect x="${x.toFixed(1)}" y="${y.toFixed(1)}" width="${Math.max(1, bw).toFixed(1)}" height="${h.toFixed(1)}" rx="2" fill="${fill}"${on ? ' stroke="#241c16" stroke-width="1.4"' : ""}/>`;
+  }).join("");
+}
+function syncFigures() {
+  if (place.kind === "fire") {
+    syncFires();
+    const when = document.getElementById("when");
+    if (when) when.textContent = hourText(hourF);
+    return;
+  }
+  const item = selected();
+  const aqi = valueOf(item, "AQI", hourF);
+  const color = aqi == null ? "#808080" : tierColor("AQI", aqi);
+  const num = document.getElementById("num");
+  if (!num) return;
+  num.textContent = fmt(aqi);
+  const card = document.getElementById("aqiCard");
+  if (card) {
+    card.style.background = color;
+    card.style.color = markInk(color);
+  }
+  document.getElementById("band").textContent = bandName(aqi);
+  document.getElementById("sentence").textContent = sentence(aqi);
+  const when = hourText(hourF);
+  document.getElementById("when").textContent = when;
+  const cardWhen = document.getElementById("cardWhen");
+  if (cardWhen) cardWhen.textContent = when;
+  const where = document.getElementById("stationWhere");
+  if (where) where.textContent = placeWhere(item);
+  const facts = document.getElementById("stationFacts");
+  if (facts) facts.innerHTML = stationFacts(item);
+  const main = mainPollutant(item);
+  const mainV = main ? valueOf(item, main, hourF) : null;
+  const mainName = document.getElementById("mainName");
+  const mainVal = document.getElementById("mainVal");
+  if (mainName) mainName.textContent = polLabel(main);
+  if (mainVal) mainVal.textContent = mainV == null ? "—" : `${fmt(mainV)} ${UNIT[main] || ""}`.trim();
+  const wind10 = document.getElementById("wind10");
+  const wind925 = document.getElementById("wind925");
+  const firesNear = document.getElementById("firesNear");
+  const reporting = document.getElementById("reporting");
+  if (wind10) wind10.textContent = windAt(item, false);
+  if (wind925) wind925.textContent = windAt(item, true);
+  if (firesNear) firesNear.textContent = String(nearbyFireCount(item));
+  if (reporting) reporting.textContent = reportingText(item);
+  for (const el of document.querySelectorAll("[data-val]")) {
+    const p = el.dataset.val;
+    const v = valueOf(item, p, hourF);
+    el.textContent = `${v == null ? "—" : v} ${UNIT[p]}`;
+    const bar = document.querySelector(`[data-bar="${p}"]`);
+    if (bar) {
+      const ref = REF[p] || 1;
+      bar.style.width = `${v == null ? 0 : Math.min(100, (v / (ref * 3)) * 100)}%`;
+      bar.style.background = v == null ? "#d5d0ca" : tierColor(p, v);
+    }
+  }
+  drawHistory();
+  syncFires();
+  syncCorridorCard();
+}
+function corridorPlaceName(item) {
+  if (!item || item.kind === "fire" || item.kind === "anchor") return null;
+  if (item.kind === "station") return item.district || null;
+  return item.name || null;
+}
+function syncCorridorCard() {
+  const inside = document.getElementById("corInside");
+  const outside = document.getElementById("corOutside");
+  const hops = document.getElementById("corHops");
+  if (!inside || !outside) return;
+  const hour = Math.max(0, Math.min(A.hours.length - 1, Math.round(hourF)));
+  const spoken = layers.corridors && window.Corridor
+    ? Corridor.speak(hour, corridorPlaceName(selected()))
+    : { inside: null, outside: null, hops: [] };
+  inside.hidden = !spoken.inside;
+  outside.hidden = !spoken.outside;
+  const insideText = document.getElementById("corInsideText");
+  const outsideText = document.getElementById("corOutsideText");
+  if (insideText) insideText.textContent = spoken.inside || "";
+  if (outsideText) outsideText.textContent = spoken.outside || "";
+  if (hops) {
+    hops.innerHTML = spoken.hops && spoken.hops.length
+      ? `<ul class="cor-hops">${spoken.hops.map((line) => `<li>${line.replace(/&/g, "&amp;").replace(/</g, "&lt;")}</li>`).join("")}</ul>`
+      : "";
+  }
+}
+function syncFires() {
+  const list = firesNow();
+  const btn = document.querySelector("[data-layer='fires']");
+  if (btn) btn.textContent = layers.fires ? `Fires ${list.length}` : "Fires";
+  const stationBtn = document.querySelector("[data-layer='stations']");
+  if (stationBtn) {
+    const reporting = A.stations.filter((s) => valueOf(s, pol, hourF) != null).length;
+    stationBtn.textContent = layers.stations ? `Stations ${reporting}` : "Stations";
+  }
+  if (place.kind !== "fire") return;
+  const item = selected();
+  const facts = document.getElementById("fireFacts");
+  if (facts && item) facts.innerHTML = fireDetailRows(item);
+}
+
+function choose(kind, id, fly) {
+  if (kind === "fire" && place.kind !== "fire") placeBefore = { kind: place.kind, id: place.id };
+  place = { kind, id: kind === "fire" ? Number(id) : id };
+  const item = selected();
+  mountCard();
+  if (fly && item && Number.isFinite(item.lon)) {
+    const k = kind === "station" ? minK() * 22 : kind === "fire" ? minK() * 8 : kind === "anchor" ? minK() * 4.2 : minK() * 4.6;
+    goPoint(item.lon, item.lat, Math.max(k, cam.k));
+  }
+  poke();
+}
+
+function mountLayers() {
+  const defs = [["stations", "Stations"], ["air", "Air"], ["wind", "Wind"], ["fires", "Fires"], ["border", "Border"], ["airports", "Airports"], ["corridors", "Transboundary"]];
+  document.getElementById("layers").innerHTML = defs.map(([id, label]) =>
+    `<button type="button" class="layer glass ${layers[id] ? "on" : ""}" data-layer="${id}">${label}</button>`).join("");
+}
+
+document.getElementById("card").addEventListener("click", (ev) => {
+  if (ev.target.closest("#fireBack")) {
+    choose(placeBefore.kind, placeBefore.id, true);
+    return;
+  }
+  if (ev.target.closest("#seeDetails")) {
+    detailsOpen = !detailsOpen;
+    const box = document.getElementById("details");
+    const btn = document.getElementById("seeDetails");
+    if (box) box.hidden = !detailsOpen;
+    if (btn) {
+      btn.setAttribute("aria-expanded", detailsOpen ? "true" : "false");
+      btn.textContent = detailsOpen ? "Hide details" : "See details";
+    }
+    return;
+  }
+  const polBtn = ev.target.closest("[data-pol]");
+  if (polBtn) {
+    prevPol = pol;
+    pol = polBtn.dataset.pol;
+    tint = 0;
+    mountCard();
+    poke();
+  }
+});
+
+const q = document.getElementById("q");
+const results = document.getElementById("results");
+function searchItems(query) {
+  const n = query.trim().toLowerCase();
+  if (!n) return [];
+  const out = [];
+  for (const d of A.districts) if (d.name.toLowerCase().includes(n)) out.push({ kind: "district", id: d.name, sub: "District" });
+  for (const s of A.stations) if (s.name.toLowerCase().includes(n)) out.push({ kind: "station", id: s.name, sub: s.district });
+  for (const a of A.anchors) if (a.name.toLowerCase().includes(n)) out.push({ kind: "anchor", id: a.name, sub: a.place });
+  return out.slice(0, 8);
+}
+q.addEventListener("input", () => {
+  const items = searchItems(q.value);
+  results.hidden = !items.length;
+  results.innerHTML = items.map((item, i) =>
+    `<li role="option" data-i="${i}"><span>${item.id}</span><small>${item.sub}</small></li>`).join("");
+  results._items = items;
+});
+results.addEventListener("click", (ev) => {
+  const li = ev.target.closest("li");
+  if (!li) return;
+  const item = results._items[Number(li.dataset.i)];
+  choose(item.kind, item.id, true);
+  results.hidden = true;
+  q.value = item.id;
+});
+document.getElementById("search").addEventListener("submit", (ev) => {
+  ev.preventDefault();
+  const items = results._items || searchItems(q.value);
+  if (items[0]) choose(items[0].kind, items[0].id, true);
+  results.hidden = true;
+});
+const searchForm = document.getElementById("search");
+searchForm.inert = true;
+document.getElementById("searchToggle").addEventListener("click", () => {
+  const open = document.body.classList.toggle("search-open");
+  const btn = document.getElementById("searchToggle");
+  btn.setAttribute("aria-expanded", open ? "true" : "false");
+  btn.setAttribute("aria-label", open ? "Hide search" : "Show search");
+  searchForm.inert = !open;
+  if (open) setTimeout(() => q.focus(), 30);
+  else {
+    results.hidden = true;
+    q.blur();
+  }
+});
+document.addEventListener("keydown", (ev) => {
+  if (ev.key === "Escape" && document.body.classList.contains("search-open")) {
+    document.getElementById("searchToggle").click();
+  }
+});
+
+document.getElementById("layers").addEventListener("click", (ev) => {
+  const btn = ev.target.closest("[data-layer]");
+  if (!btn) return;
+  layers[btn.dataset.layer] = !layers[btn.dataset.layer];
+  btn.classList.toggle("on", layers[btn.dataset.layer]);
+  syncFires();
+  syncCorridorCard();
+  poke();
+});
+function markView(id) {
+  document.getElementById("fit").classList.toggle("on", id === "fit");
+  document.getElementById("plains").classList.toggle("on", id === "plains");
+}
+document.getElementById("panelToggle").addEventListener("click", () => {
+  const hidden = document.body.classList.toggle("panel-hidden");
+  const toggle = document.getElementById("panelToggle");
+  const card = document.getElementById("card");
+  toggle.setAttribute("aria-expanded", hidden ? "false" : "true");
+  toggle.setAttribute("aria-label", hidden ? "Show panel" : "Hide panel");
+  card.inert = hidden;
+});
+document.getElementById("fit").addEventListener("click", () => { markView("fit"); goNeighborhood(); });
+document.getElementById("plains").addEventListener("click", () => { markView("plains"); goPlains(); });
+document.getElementById("zin").addEventListener("click", () => {
+  markView("");
+  const [w, h] = cssSize();
+  zoomBy(1.3, w / 2, h / 2);
+});
+document.getElementById("zout").addEventListener("click", () => {
+  markView("");
+  const [w, h] = cssSize();
+  zoomBy(1 / 1.3, w / 2, h / 2);
+});
+document.getElementById("play").addEventListener("click", () => {
+  playing = !playing;
+  document.getElementById("play").textContent = playing ? "❚❚" : "▶";
+  document.getElementById("play").setAttribute("aria-label", playing ? "Pause" : "Play the episode");
+  poke();
+});
+document.getElementById("hour").addEventListener("input", (ev) => {
+  hourF = Number(ev.target.value);
+  syncFigures();
+  poke();
+});
+
+canvas.addEventListener("pointerdown", (ev) => {
+  drag = { x: ev.clientX, y: ev.clientY, ox: cam.x, oy: cam.y, moved: false, id: ev.pointerId };
+  canvas.setPointerCapture(ev.pointerId);
+});
+canvas.addEventListener("pointermove", (ev) => {
+  const rect = canvas.getBoundingClientRect();
+  const sx = ev.clientX - rect.left;
+  const sy = ev.clientY - rect.top;
+  if (drag) {
+    const dx = ev.clientX - drag.x;
+    const dy = ev.clientY - drag.y;
+    if (Math.hypot(dx, dy) > 4) drag.moved = true;
+    cam.x = drag.ox - dx / cam.k;
+    cam.y = drag.oy - dy / cam.k;
+    camTo = null;
+    poke();
+    return;
+  }
+  const fire = hitFire(sx, sy);
+  const hit = fire || hitTest(sx, sy);
+  hover = hit;
+  canvas.style.cursor = hit ? "pointer" : "grab";
+  if (!hit) { tip.style.display = "none"; return; }
+  tip.style.display = "block";
+  tip.style.left = ev.clientX + "px";
+  tip.style.top = ev.clientY + "px";
+  tip.textContent = fire
+    ? `${fire.region} · ${fire.frp} MW · ${fire.sat}`
+    : `${hit.name}${hit.kind === "station" ? ` · ${hit.district}${hit.mobile ? " · mobile" : ""}` : ""} · ${fmt(valueOf(hit, pol, hourF))}`;
+});
+canvas.addEventListener("pointerup", (ev) => {
+  if (!drag) return;
+  const rect = canvas.getBoundingClientRect();
+  if (!drag.moved) {
+    const sx = ev.clientX - rect.left;
+    const sy = ev.clientY - rect.top;
+    const fire = hitFire(sx, sy);
+    if (fire) choose("fire", A.fires.indexOf(fire), true);
+    else {
+      const hit = hitTest(sx, sy);
+      if (hit) choose(hit.kind, hit.name, true);
+    }
+  }
+  drag = null;
+});
+canvas.addEventListener("pointerleave", () => { tip.style.display = "none"; });
+canvas.addEventListener("wheel", (ev) => {
+  ev.preventDefault();
+  const r = canvas.getBoundingClientRect();
+  const sx = ev.clientX - r.left;
+  const sy = ev.clientY - r.top;
+  zoomBy(ev.deltaY < 0 ? 1.12 : 0.89, sx, sy);
+}, { passive: false });
+
+addEventListener("resize", resize);
+mountLayers();
+mountCard();
+resize();
+goNeighborhood();
+document.fonts.ready.then(() => poke());
+</script>
+</body>
+</html>
